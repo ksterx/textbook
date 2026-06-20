@@ -43,12 +43,12 @@ flowchart TD
 
 | # | 章 | 状態 |
 | --- | --- | --- |
-| 1 | Physical AI とは — 全体像と座標系 | 🚧 予定 |
-| 2 | 運動学 — kinematics | 🚧 予定 |
-| 3 | 古典制御 — PID | 🚧 予定 |
-| 4 | 最適制御 | 🚧 予定 |
-| 5 | 知覚と状態推定 | 🚧 予定 |
-| 6 | 学習ベース制御と sim-to-real | 🚧 予定 |
+| 1 | [Physical AI とは — 全体像と座標系](/physical-ai/01-overview-and-frames/) | ✅ 公開 |
+| 2 | [運動学 — kinematics](/physical-ai/02-kinematics/) | ✅ 公開 |
+| 3 | [古典制御 — PID](/physical-ai/03-pid-control/) | ✅ 公開 |
+| 4 | [最適制御 — LQR](/physical-ai/04-optimal-control/) | ✅ 公開 |
+| 5 | [知覚と状態推定 — カルマンフィルタ](/physical-ai/05-perception-state-estimation/) | ✅ 公開 |
+| 6 | [学習ベース制御と sim-to-real](/physical-ai/06-learning-based-control-sim2real/) | ✅ 公開 |
 
 :::note[章は順次追加されます]
 「次は◯◯の章を書いて」と指示すると、統一フォーマットで新しい章が追加されます。

@@ -45,13 +45,13 @@ flowchart TD
 
 | # | 章 | 状態 |
 | --- | --- | --- |
-| 1 | 強化学習とは — 問題設定と MDP | 🚧 予定 |
-| 2 | 動的計画法 — 価値反復・方策反復 | 🚧 予定 |
-| 3 | モデルフリー予測 — モンテカルロ・TD | 🚧 予定 |
-| 4 | モデルフリー制御 — Q 学習・SARSA | 🚧 予定 |
-| 5 | 関数近似と DQN | 🚧 予定 |
-| 6 | 方策勾配法 | 🚧 予定 |
-| 7 | Actor-Critic | 🚧 予定 |
+| 1 | [強化学習とは — 問題設定と MDP](/reinforcement-learning/01-mdp/) | ✅ 公開 |
+| 2 | [動的計画法 — 価値反復・方策反復](/reinforcement-learning/02-dynamic-programming/) | ✅ 公開 |
+| 3 | [モデルフリー予測 — モンテカルロ・TD](/reinforcement-learning/03-model-free-prediction/) | ✅ 公開 |
+| 4 | [モデルフリー制御 — SARSA・Q 学習](/reinforcement-learning/04-model-free-control/) | ✅ 公開 |
+| 5 | [関数近似と DQN](/reinforcement-learning/05-function-approximation-dqn/) | ✅ 公開 |
+| 6 | [方策勾配法 — REINFORCE](/reinforcement-learning/06-policy-gradient/) | ✅ 公開 |
+| 7 | [Actor-Critic](/reinforcement-learning/07-actor-critic/) | ✅ 公開 |
 
 :::note[章は順次追加されます]
 「次は◯◯の章を書いて」と指示すると、統一フォーマットで新しい章が追加されます。

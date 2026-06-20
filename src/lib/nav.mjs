@@ -39,7 +39,15 @@ export const NAV = [
   },
   {
     domain: '🦾 身体性・行動（Physical AI）',
-    items: [{ title: 'ロードマップ', href: '/physical-ai/' }],
+    items: [
+      { title: 'ロードマップ', href: '/physical-ai/' },
+      { title: '1. 全体像と座標系', href: '/physical-ai/01-overview-and-frames/' },
+      { title: '2. 運動学（kinematics）', href: '/physical-ai/02-kinematics/' },
+      { title: '3. 古典制御（PID）', href: '/physical-ai/03-pid-control/' },
+      { title: '4. 最適制御（LQR）', href: '/physical-ai/04-optimal-control/' },
+      { title: '5. 知覚と状態推定（Kalman）', href: '/physical-ai/05-perception-state-estimation/' },
+      { title: '6. 学習ベース制御・sim-to-real', href: '/physical-ai/06-learning-based-control-sim2real/' },
+    ],
   },
   {
     domain: '🔀 マルチモーダル',
@@ -47,6 +55,15 @@ export const NAV = [
   },
   {
     domain: '🎯 強化学習（横断的学習パラダイム）',
-    items: [{ title: 'ロードマップ', href: '/reinforcement-learning/' }],
+    items: [
+      { title: 'ロードマップ', href: '/reinforcement-learning/' },
+      { title: '1. 強化学習とは（MDP）', href: '/reinforcement-learning/01-mdp/' },
+      { title: '2. 動的計画法', href: '/reinforcement-learning/02-dynamic-programming/' },
+      { title: '3. モデルフリー予測（MC・TD）', href: '/reinforcement-learning/03-model-free-prediction/' },
+      { title: '4. モデルフリー制御（SARSA・Q学習）', href: '/reinforcement-learning/04-model-free-control/' },
+      { title: '5. 関数近似と DQN', href: '/reinforcement-learning/05-function-approximation-dqn/' },
+      { title: '6. 方策勾配法', href: '/reinforcement-learning/06-policy-gradient/' },
+      { title: '7. Actor-Critic', href: '/reinforcement-learning/07-actor-critic/' },
+    ],
   },
 ]
