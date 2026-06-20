@@ -60,8 +60,10 @@
 .md-typeset pre,
 .md-typeset kbd { font-family: var(--tb-mono); }
 
-/* 本文の最大幅を絞り、図・数式・コードを読みやすく */
-.md-grid { max-width: 52rem; }
+/* コンテンツ領域の幅。.md-grid は「左ナビ + 本文 + 右TOC」3カラム全体の幅なので、
+   既定(61rem)や狭い値だと本文がサイドバーに挟まれて窮屈になる。
+   サイドバー各 12.1rem を見込み、本文が約 47rem 確保できる 74rem にする。 */
+.md-grid { max-width: 74rem; }
 
 /* ---- ディスプレイ数式：パネル＋ティールの左罫（参照稿の .math） ---- */
 .md-typeset div.arithmatex {
