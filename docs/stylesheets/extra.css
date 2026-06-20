@@ -93,6 +93,8 @@
   border-radius: 5px;
   background: var(--tb-panel);
 }
+/* 正方形に近い図（マスク等）は幅を絞って中央寄せ */
+.md-typeset canvas.tb-fig--narrow { max-width: 360px; margin-inline: auto; }
 .tb-canvas-label {
   display: flex;
   justify-content: space-between;

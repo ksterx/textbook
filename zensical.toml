@@ -55,6 +55,9 @@ nav = [
   { "Audio（音声・音響）" = [
     "audio/index.md",
     { "1. デジタル音声の基礎" = "audio/01-digital-audio-basics.md" },
+    { "2. 周波数領域とスペクトル特徴量" = "audio/02-frequency-and-features.md" },
+    { "3. ニューラル音声コーデック" = "audio/03-neural-audio-codecs.md" },
+    { "4. 音声認識 (ASR)" = "audio/04-asr.md" },
   ] },
   { "強化学習（Reinforcement Learning）" = [
     "reinforcement-learning/index.md",
