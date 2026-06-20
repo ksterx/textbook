@@ -1,0 +1,12 @@
+# Zensical build output
+/site/
+.zensical/
+.cache/
+
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store

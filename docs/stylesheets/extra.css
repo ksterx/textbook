@@ -1,0 +1,18 @@
+/* テキスト全体の共通スタイル調整。最小限にとどめる。 */
+
+/* 本文の最大幅を少し広げ、図や数式を読みやすくする */
+.md-grid {
+  max-width: 56rem;
+}
+
+/* ディスプレイ数式が横に長い場合に横スクロールできるようにする */
+.arithmatex {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* 章末の演習・解答などに使う admonition の見た目を引き締める */
+.md-typeset .admonition,
+.md-typeset details {
+  font-size: 0.72rem;
+}
