@@ -481,5 +481,3 @@ GAE のアドバンテージ $\hat{A}_t^{\mathrm{GAE}(\gamma,\lambda)} = \sum_{l
 6. T. Haarnoja, A. Zhou, P. Abbeel, S. Levine, "Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor," *ICML*, 2018.（SAC）
 7. L. Ouyang et al., "Training Language Models to Follow Instructions with Human Feedback," *NeurIPS*, 2022.（InstructGPT / RLHF。Actor-Critic = PPO の LLM 応用）
 8. R. S. Sutton, A. G. Barto, *Reinforcement Learning: An Introduction*, 2nd ed., MIT Press, 2018.（定番教科書。13 章が方策勾配・Actor-Critic）
-</content>
-</invoke>

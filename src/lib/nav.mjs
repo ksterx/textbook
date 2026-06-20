@@ -35,7 +35,15 @@ export const NAV = [
   },
   {
     domain: '👁 視覚（Vision）',
-    items: [{ title: 'ロードマップ', href: '/vision/' }],
+    items: [
+      { title: 'ロードマップ', href: '/vision/' },
+      { title: '1. CNN（畳み込み）', href: '/vision/01-cnn/' },
+      { title: '2. Vision Transformer (ViT)', href: '/vision/02-vit/' },
+      { title: '3. 自己教師あり表現学習', href: '/vision/03-self-supervised/' },
+      { title: '4. 画像生成（拡散モデル）', href: '/vision/04-diffusion-generation/' },
+      { title: '5. 検出とセグメンテーション', href: '/vision/05-detection-segmentation/' },
+      { title: '6. 現代 Vision の地図', href: '/vision/06-vision-landscape/' },
+    ],
   },
   {
     domain: '🦾 身体性・行動（Physical AI）',
@@ -51,7 +59,14 @@ export const NAV = [
   },
   {
     domain: '🔀 マルチモーダル',
-    items: [{ title: 'ロードマップ', href: '/multimodal/' }],
+    items: [
+      { title: 'ロードマップ', href: '/multimodal/' },
+      { title: '1. 共通表現と対照学習（CLIP）', href: '/multimodal/01-contrastive-clip/' },
+      { title: '2. Vision-Language モデル', href: '/multimodal/02-vision-language-models/' },
+      { title: '3. マルチモーダル生成', href: '/multimodal/03-multimodal-generation/' },
+      { title: '4. any-to-any・omni', href: '/multimodal/04-any-to-any-omni/' },
+      { title: '5. 現代マルチモーダルの地図', href: '/multimodal/05-multimodal-landscape/' },
+    ],
   },
   {
     domain: '🎯 強化学習（横断的学習パラダイム）',
