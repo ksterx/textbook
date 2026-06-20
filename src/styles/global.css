@@ -148,7 +148,8 @@ details.callout[open] > summary { margin-bottom: 0.6rem; }
     padding: 1.2rem 1rem 2.5rem;
     background: var(--ground); border-right: 1px solid var(--hair);
     box-shadow: 2px 0 14px rgba(0, 0, 0, 0.14);
-    overflow-y: auto; z-index: 30;
+    overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    z-index: 30;
     transform: translateX(-100%); transition: transform 0.22s ease;
   }
   body.nav-open .nav-left { transform: translateX(0); }
