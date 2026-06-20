@@ -9,6 +9,10 @@ export const NAV = [
       { title: '2. 周波数領域とスペクトル特徴量', href: '/audio/02-frequency-and-features/' },
       { title: '3. ニューラル音声コーデック', href: '/audio/03-neural-audio-codecs/' },
       { title: '4. 音声認識 (ASR)', href: '/audio/04-asr/' },
+      { title: '5. 現代 TTS の全体地図', href: '/audio/05-tts-landscape/' },
+      { title: '6. トークンベース TTS（VALL-E）', href: '/audio/06-token-based-tts/' },
+      { title: '7. 連続生成 TTS（flow matching）', href: '/audio/07-flow-matching-tts/' },
+      { title: '8. 統合・全二重 streaming TTS', href: '/audio/08-unified-streaming-tts/' },
     ],
   },
   {
