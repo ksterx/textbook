@@ -28,11 +28,14 @@ body {
 
 /* ---- header ---- */
 .site-header {
-  position: sticky; top: 0; z-index: 20;
+  position: sticky; top: 0; z-index: 40;
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
   padding: 0.7rem 1.4rem; background: var(--accent); color: #fff; border-bottom: 1px solid #084f57;
 }
 .site-header .brand { color: #fff; font-family: var(--sans); font-weight: 750; text-decoration: none; letter-spacing: -0.01em; }
+.header-left { display: flex; align-items: center; gap: 0.55rem; }
+.nav-toggle { display: none; }
+.nav-backdrop { display: none; }
 .search { min-width: 13rem; }
 
 /* ---- 3カラム ---- */
@@ -128,6 +131,33 @@ details.callout[open] > summary { margin-bottom: 0.6rem; }
 /* ---- responsive ---- */
 @media (max-width: 62rem) {
   .layout { grid-template-columns: 1fr; }
-  .nav-left, .toc { position: static; max-height: none; padding-top: 1rem; }
   .toc { display: none; }
+
+  /* ヘッダにハンバーガーを出す */
+  .nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: none; border: none; color: #fff; cursor: pointer;
+    font-size: 1.45rem; line-height: 1; padding: 0 0.3rem;
+  }
+  .search { min-width: 0; }
+
+  /* 左ナビを off-canvas ドロワー化（スライドイン） */
+  .nav-left {
+    position: fixed; top: 3.2rem; left: 0; bottom: 0;
+    width: 16rem; max-width: 82vw; margin: 0; max-height: none;
+    padding: 1.2rem 1rem 2.5rem;
+    background: var(--ground); border-right: 1px solid var(--hair);
+    box-shadow: 2px 0 14px rgba(0, 0, 0, 0.14);
+    overflow-y: auto; z-index: 30;
+    transform: translateX(-100%); transition: transform 0.22s ease;
+  }
+  body.nav-open .nav-left { transform: translateX(0); }
+
+  .nav-backdrop {
+    display: block; position: fixed; inset: 3.2rem 0 0 0;
+    background: rgba(0, 0, 0, 0.4); z-index: 25;
+    opacity: 0; pointer-events: none; transition: opacity 0.22s ease;
+  }
+  body.nav-open .nav-backdrop { opacity: 1; pointer-events: auto; }
+  body.nav-open { overflow: hidden; }
 }

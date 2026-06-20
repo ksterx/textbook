@@ -24,9 +24,13 @@ const isActive = (href) => here === withBase(href) || here === withBase(href).re
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href={BASE}>Textbook</a>
+      <div class="header-left">
+        <button class="nav-toggle" type="button" aria-label="メニューを開閉" aria-expanded="false">☰</button>
+        <a class="brand" href={BASE}>Textbook</a>
+      </div>
       <div id="search" class="search"></div>
     </header>
+    <div class="nav-backdrop" aria-hidden="true"></div>
 
     <div class="layout">
       <nav class="nav-left" aria-label="ナビゲーション">
@@ -75,6 +79,48 @@ const isActive = (href) => here === withBase(href) || here === withBase(href).re
 
     <!-- 領域固有の Canvas 図 -->
     <script is:inline src={withBase('/figures.js')}></script>
+
+    <!-- モバイル: 左ナビをドロワーとして開閉 -->
+    <script is:inline>
+      (function () {
+        var btn = document.querySelector('.nav-toggle');
+        var bd = document.querySelector('.nav-backdrop');
+        var nav = document.querySelector('.nav-left');
+        var mq = window.matchMedia('(max-width: 62rem)');
+        // モバイルで「閉じている」ときだけ、画面外のナビをタブ順・支援技術から外す。
+        // デスクトップ（サイドバー時）は常に操作可能に戻す。
+        function applyA11y(open) {
+          if (!nav) return;
+          if (mq.matches && !open) {
+            nav.setAttribute('inert', '');
+            nav.setAttribute('aria-hidden', 'true');
+          } else {
+            nav.removeAttribute('inert');
+            nav.removeAttribute('aria-hidden');
+          }
+        }
+        function set(open) {
+          document.body.classList.toggle('nav-open', open);
+          if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+          applyA11y(open);
+        }
+        if (btn) btn.addEventListener('click', function () {
+          set(!document.body.classList.contains('nav-open'));
+        });
+        if (bd) bd.addEventListener('click', function () { set(false); });
+        if (nav) nav.addEventListener('click', function (e) {
+          if (e.target.closest('a')) set(false);
+        });
+        // Escape で閉じる
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && document.body.classList.contains('nav-open')) set(false);
+        });
+        applyA11y(document.body.classList.contains('nav-open'));
+        mq.addEventListener('change', function () {
+          applyA11y(document.body.classList.contains('nav-open'));
+        });
+      })();
+    </script>
 
     <!-- Mermaid をローカルバンドルから遅延読み込み（図のあるページのみ） -->
     <script>
