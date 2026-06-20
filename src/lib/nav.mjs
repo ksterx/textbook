@@ -10,6 +10,13 @@ export const NAV = [
     domain: '🔤 言語（LLM）',
     items: [
       { title: 'ロードマップ', href: '/llm/' },
+      { title: '1. 言語モデルとトークン化', href: '/llm/01-language-model-and-tokenization/' },
+      { title: '2. Attention 機構', href: '/llm/02-attention/' },
+      { title: '3. Transformer の構造', href: '/llm/03-transformer/' },
+      { title: '4. 事前学習とスケーリング則', href: '/llm/04-pretraining-scaling/' },
+      { title: '5. 適応 — RLHF・DPO', href: '/llm/05-adaptation-rlhf/' },
+      { title: '6. 推論と効率化', href: '/llm/06-inference-efficiency/' },
+      { title: '7. 現代 LLM の地図', href: '/llm/07-llm-landscape/' },
     ],
   },
   {

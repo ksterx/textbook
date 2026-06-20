@@ -48,13 +48,13 @@ flowchart TD
 
 | # | 章 | 状態 |
 | --- | --- | --- |
-| 1 | 言語モデルとトークン化 | 🚧 予定 |
-| 2 | Attention 機構 | 🚧 予定 |
-| 3 | Transformer の構造 | 🚧 予定 |
-| 4 | 事前学習とスケーリング則 | 🚧 予定 |
-| 5 | 適応 — 指示チューニング・RLHF・DPO | 🚧 予定 |
-| 6 | 推論と効率化 | 🚧 予定 |
-| 7 | 現代 LLM の地図 — 推論モデル・エージェント・研究トレンド | 🚧 予定 |
+| 1 | [言語モデルとトークン化](/llm/01-language-model-and-tokenization/) | ✅ 公開 |
+| 2 | [Attention 機構](/llm/02-attention/) | ✅ 公開 |
+| 3 | [Transformer の構造](/llm/03-transformer/) | ✅ 公開 |
+| 4 | [事前学習とスケーリング則](/llm/04-pretraining-scaling/) | ✅ 公開 |
+| 5 | [適応 — 指示チューニング・RLHF・DPO](/llm/05-adaptation-rlhf/) | ✅ 公開 |
+| 6 | [推論と効率化](/llm/06-inference-efficiency/) | ✅ 公開 |
+| 7 | [現代 LLM の地図 — 推論モデル・エージェント・研究トレンド](/llm/07-llm-landscape/) | ✅ 公開 |
 
 :::note[章は順次追加されます]
 「次は◯◯の章を書いて」と指示すると、統一フォーマットで新しい章が追加されます。

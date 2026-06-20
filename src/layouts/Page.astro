@@ -4,7 +4,7 @@ import '../styles/global.css';
 import { NAV } from '../lib/nav.mjs';
 
 const { frontmatter, headings = [] } = Astro.props;
-const title = frontmatter?.title ?? '体系学習テキスト';
+const title = frontmatter?.title ?? 'Textbook';
 const description = frontmatter?.description ?? '音声・強化学習・LLM・Physical AI を一から体系的に学ぶ技術テキスト。';
 const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
 
@@ -24,7 +24,7 @@ const isActive = (href) => here === withBase(href) || here === withBase(href).re
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href={BASE}>体系学習テキスト</a>
+      <a class="brand" href={BASE}>Textbook</a>
       <div id="search" class="search"></div>
     </header>
 
@@ -59,7 +59,7 @@ const isActive = (href) => here === withBase(href) || here === withBase(href).re
     </div>
 
     <footer class="site-footer">
-      体系学習テキスト · Astro + KaTeX（数式はビルド時レンダー・外部依存なし）
+      Textbook · Astro + KaTeX（数式はビルド時レンダー・外部依存なし）
     </footer>
 
     <!-- Pagefind 静的全文検索（ビルド後に有効） -->

@@ -1,4 +1,4 @@
-# 体系学習テキスト
+# Textbook
 
 音声 (Audio)・強化学習 (Reinforcement Learning)・LLM・Physical AI などを、**一から体系的に**学ぶための技術テキスト。
 **[Astro](https://astro.build)** で構築し、GitHub Pages に公開しています。
