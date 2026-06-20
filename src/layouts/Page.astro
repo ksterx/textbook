@@ -1,0 +1,88 @@
+---
+import 'katex/dist/katex.min.css';
+import '../styles/global.css';
+import { NAV } from '../lib/nav.mjs';
+
+const { frontmatter, headings = [] } = Astro.props;
+const title = frontmatter?.title ?? '体系学習テキスト';
+const description = frontmatter?.description ?? '音声・強化学習・LLM・Physical AI を一から体系的に学ぶ技術テキスト。';
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+
+const BASE = import.meta.env.BASE_URL; // 末尾スラッシュ付き（例 /textbook/）
+const withBase = (href) => (BASE.replace(/\/$/, '') + href);
+const here = Astro.url.pathname;
+const isActive = (href) => here === withBase(href) || here === withBase(href).replace(/\/$/, '');
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href={BASE}>体系学習テキスト</a>
+      <div id="search" class="search"></div>
+    </header>
+
+    <div class="layout">
+      <nav class="nav-left" aria-label="ナビゲーション">
+        {NAV.map((sec) => (
+          <div class="nav-sec">
+            <p class="nav-title">{sec.domain}</p>
+            <ul>
+              {sec.items.map((it) => (
+                <li>
+                  <a href={withBase(it.href)} class={isActive(it.href) ? 'active' : ''}>{it.title}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </nav>
+
+      <main class="content" data-pagefind-body>
+        <slot />
+      </main>
+
+      <aside class="toc" aria-label="目次">
+        {toc.length > 0 && <p class="toc-title">この章の目次</p>}
+        <ul>
+          {toc.map((h) => (
+            <li class={`d${h.depth}`}><a href={`#${h.slug}`}>{h.text}</a></li>
+          ))}
+        </ul>
+      </aside>
+    </div>
+
+    <footer class="site-footer">
+      体系学習テキスト · Astro + KaTeX（数式はビルド時レンダー・外部依存なし）
+    </footer>
+
+    <!-- Pagefind 静的全文検索（ビルド後に有効） -->
+    <link href={withBase('/pagefind/pagefind-ui.css')} rel="stylesheet" />
+    <script is:inline define:vars={{ ui: withBase('/pagefind/pagefind-ui.js'), bundle: withBase('/pagefind/') }}>
+      var s = document.createElement('script');
+      s.src = ui;
+      s.onload = function () {
+        if (window.PagefindUI) new window.PagefindUI({ element: '#search', bundlePath: bundle, showImages: false, resetStyles: false });
+      };
+      document.head.appendChild(s);
+    </script>
+
+    <!-- 領域固有の Canvas 図 -->
+    <script is:inline src={withBase('/figures.js')}></script>
+
+    <!-- Mermaid をローカルバンドルから遅延読み込み（図のあるページのみ） -->
+    <script>
+      if (document.querySelector('.mermaid')) {
+        const { default: mermaid } = await import('mermaid');
+        mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose' });
+        await mermaid.run();
+      }
+    </script>
+  </body>
+</html>

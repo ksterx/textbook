@@ -1,18 +1,19 @@
 ---
-icon: lucide/audio-lines
+layout: ../../layouts/Page.astro
+title: デジタル音声の基礎 — サンプリングと量子化
 description: 連続的な音の波を、コンピュータが扱える数値の列に変換する仕組み（サンプリングと量子化）を、サンプリング定理と量子化誤差の導出を通じて理解する。
 ---
 
 # デジタル音声の基礎 — サンプリングと量子化
 
-!!! abstract "学習目標"
+:::abstract[学習目標]
+この章を読み終えると、次のことができるようになります。
 
-    この章を読み終えると、次のことができるようになります。
-
-    - 連続信号を離散信号に変換する **sampling**（標本化）と **quantization**（量子化）を説明できる
-    - **サンプリング定理（Nyquist–Shannon）** を述べ、なぜ $f_s > 2f_\mathrm{max}$ が必要かを導出できる
-    - **aliasing**（エイリアシング、折り返し雑音）がいつ・どのように起きるかを式と実験で示せる
-    - 量子化による誤差を確率的にモデル化し、**SQNR ≈ 6.02 B + 1.76 dB** を導出できる
+- 連続信号を離散信号に変換する **sampling**（標本化）と **quantization**（量子化）を説明できる
+- **サンプリング定理（Nyquist–Shannon）** を述べ、なぜ $f_s > 2f_\mathrm{max}$ が必要かを導出できる
+- **aliasing**（エイリアシング、折り返し雑音）がいつ・どのように起きるかを式と実験で示せる
+- 量子化による誤差を確率的にモデル化し、**SQNR ≈ 6.02 B + 1.76 dB** を導出できる
+:::
 
 ## 前提知識
 
@@ -74,15 +75,15 @@ $$
 
 ### サンプリング定理（Nyquist–Shannon）
 
-!!! note "定理（標本化定理）"
+:::note[定理（標本化定理）]
+信号 $x(t)$ が **帯域制限** されている、すなわち最大周波数 $f_\mathrm{max}$ より上の成分を含まないとする。このとき、
 
-    信号 $x(t)$ が **帯域制限** されている、すなわち最大周波数 $f_\mathrm{max}$ より上の成分を含まないとする。このとき、
+$$
+f_s > 2 f_\mathrm{max}
+$$
 
-    $$
-    f_s > 2 f_\mathrm{max}
-    $$
-
-    を満たすサンプリング周波数で標本化すれば、$x(t)$ は標本列 $x[n]$ から **完全に復元できる**。
+を満たすサンプリング周波数で標本化すれば、$x(t)$ は標本列 $x[n]$ から **完全に復元できる**。
+:::
 
 この $f_s / 2$ を **Nyquist 周波数** と呼びます。「保存したい最高周波数の 2 倍より速くサンプリングせよ」というのが結論です。逆に $f_s$ が足りないと、高い周波数が低い周波数に化けてしまいます。これが次の aliasing です。
 
@@ -101,8 +102,8 @@ $$
 これがエイリアシングの正体です。
 
 <figure>
-  <canvas id="alias-fig" class="tb-fig" width="1600" height="480" aria-hidden="true"></canvas>
-  <figcaption class="tb-canvas-label">
+  <canvas id="alias-fig" width="1600" height="480" aria-hidden="true"></canvas>
+  <figcaption class="fig-cap">
     <span>● = 標本点（fs = 1000 Hz・1 ms 間隔）</span>
     <span>100 Hz と 1100 Hz は標本点で完全に一致</span>
   </figcaption>
@@ -150,9 +151,9 @@ $$
 
 量子化誤差 $e$ を確率的に扱います。標準的な仮定は次のとおりです。
 
-!!! note "量子化誤差の仮定"
-
-    量子化誤差 $e$ は区間 $\left[-\frac{\Delta}{2}, \frac{\Delta}{2}\right]$ 上の **一様分布** に従い、信号とは無相関である。
+:::note[量子化誤差の仮定]
+量子化誤差 $e$ は区間 $\left[-\frac{\Delta}{2}, \frac{\Delta}{2}\right]$ 上の **一様分布** に従い、信号とは無相関である。
+:::
 
 この仮定のもとで、誤差の平均は $0$、分散（= 雑音電力）は一様分布の分散の公式から
 
@@ -268,59 +269,59 @@ bits |   実測 SQNR | 理論 6.02B+1.76
 
 ## 演習
 
-!!! question "演習 1: Nyquist 周波数"
+::::question[演習 1: Nyquist 周波数]
+CD のサンプリング周波数は 44,100 Hz です。理論上、ひずみなく記録できる最高の周波数は何 Hz でしょうか。人間の可聴域の上限（約 20 kHz）と比べてどうですか。
 
-    CD のサンプリング周波数は 44,100 Hz です。理論上、ひずみなく記録できる最高の周波数は何 Hz でしょうか。人間の可聴域の上限（約 20 kHz）と比べてどうですか。
+:::details[解答]
+Nyquist 周波数は $f_s / 2 = 44{,}100 / 2 = 22{,}050\ \text{Hz}$ です。可聴域の上限 20 kHz より少し高く、可聴域全体を余裕をもってカバーするように 44.1 kHz が選ばれています。
+:::
+::::
 
-    ??? success "解答"
+::::question[演習 2: alias 周波数の計算]
+サンプリング周波数 $f_s = 8000\ \text{Hz}$ で 7000 Hz の正弦波を標本化すると、見かけ上は何 Hz に聞こえますか。式 $f_\mathrm{alias} = \lvert f - f_s\,\mathrm{round}(f/f_s)\rvert$ を使って求めてください。
 
-        Nyquist 周波数は $f_s / 2 = 44{,}100 / 2 = 22{,}050\ \text{Hz}$ です。可聴域の上限 20 kHz より少し高く、可聴域全体を余裕をもってカバーするように 44.1 kHz が選ばれています。
+:::details[解答]
+$\mathrm{round}(7000/8000) = \mathrm{round}(0.875) = 1$ なので、
+$f_\mathrm{alias} = |7000 - 8000 \times 1| = 1000\ \text{Hz}$。
+7000 Hz の音が 1000 Hz の低い音に化けて聞こえます。
+:::
+::::
 
-!!! question "演習 2: alias 周波数の計算"
+::::question[演習 3: 必要なビット数]
+ある用途で SQNR を 80 dB 以上にしたいとします。何ビットの量子化が必要ですか。$6.02B + 1.76 \ge 80$ を解いてください。
 
-    サンプリング周波数 $f_s = 8000\ \text{Hz}$ で 7000 Hz の正弦波を標本化すると、見かけ上は何 Hz に聞こえますか。式 $f_\mathrm{alias} = \lvert f - f_s\,\mathrm{round}(f/f_s)\rvert$ を使って求めてください。
+:::details[解答]
+$6.02B \ge 78.24$ より $B \ge 13.0$。整数ビットなので **13 ビット以上** が必要です（実用上は 16 ビットが選ばれることが多い）。
+:::
+::::
 
-    ??? success "解答"
+::::question[演習 4（実装）: 量子化の可聴化]
+上の `quantize` 関数を使い、`bits` を 2, 4, 8 と変えて 440 Hz の正弦波を量子化し、`scipy.io.wavfile.write` か `soundfile` で WAV に書き出して聴き比べてみましょう。ビット数が少ないほど、ざらついた雑音（量子化雑音）が乗ることを耳で確認してください。
 
-        $\mathrm{round}(7000/8000) = \mathrm{round}(0.875) = 1$ なので、
-        $f_\mathrm{alias} = |7000 - 8000 \times 1| = 1000\ \text{Hz}$。
-        7000 Hz の音が 1000 Hz の低い音に化けて聞こえます。
-
-!!! question "演習 3: 必要なビット数"
-
-    ある用途で SQNR を 80 dB 以上にしたいとします。何ビットの量子化が必要ですか。$6.02B + 1.76 \ge 80$ を解いてください。
-
-    ??? success "解答"
-
-        $6.02B \ge 78.24$ より $B \ge 13.0$。整数ビットなので **13 ビット以上** が必要です（実用上は 16 ビットが選ばれることが多い）。
-
-!!! question "演習 4（実装）: 量子化の可聴化"
-
-    上の `quantize` 関数を使い、`bits` を 2, 4, 8 と変えて 440 Hz の正弦波を量子化し、`scipy.io.wavfile.write` か `soundfile` で WAV に書き出して聴き比べてみましょう。ビット数が少ないほど、ざらついた雑音（量子化雑音）が乗ることを耳で確認してください。
-
-    ??? success "ヒント"
-
-        ```python
-        import soundfile as sf
-        for bits in (2, 4, 8):
-            sf.write(f"sine_{bits}bit.wav", quantize(x, bits).astype("float32"), int(fs))
-        ```
-        ビット数を下げると、静かな部分ほど雑音が目立つことに気づくはずです。
+:::details[ヒント]
+```python
+import soundfile as sf
+for bits in (2, 4, 8):
+    sf.write(f"sine_{bits}bit.wav", quantize(x, bits).astype("float32"), int(fs))
+```
+ビット数を下げると、静かな部分ほど雑音が目立つことに気づくはずです。
+:::
+::::
 
 ## まとめ
 
-!!! success "この章の要点"
-
-    - 音のデジタル化は **sampling（時間の離散化）** と **quantization（値の離散化）** の 2 段階。
-    - **サンプリング定理**: $f_s > 2 f_\mathrm{max}$ なら帯域制限信号を完全復元できる。$f_s/2$ が Nyquist 周波数。
-    - これを破ると **aliasing** が起き、高い周波数が $f_\mathrm{alias} = \lvert f - f_s\,\mathrm{round}(f/f_s)\rvert$ に化ける。
-    - 量子化誤差は一様分布と近似でき、雑音電力は $\Delta^2/12$。フルスケール正弦波の **SQNR ≈ 6.02 B + 1.76 dB**。
+:::success[この章の要点]
+- 音のデジタル化は **sampling（時間の離散化）** と **quantization（値の離散化）** の 2 段階。
+- **サンプリング定理**: $f_s > 2 f_\mathrm{max}$ なら帯域制限信号を完全復元できる。$f_s/2$ が Nyquist 周波数。
+- これを破ると **aliasing** が起き、高い周波数が $f_\mathrm{alias} = \lvert f - f_s\,\mathrm{round}(f/f_s)\rvert$ に化ける。
+- 量子化誤差は一様分布と近似でき、雑音電力は $\Delta^2/12$。フルスケール正弦波の **SQNR ≈ 6.02 B + 1.76 dB**。
+:::
 
 ### 次に学ぶこと
 
 ここまでで「時間領域」で音を扱えるようになりました。次は、音を **周波数の成分** に分解する **Fourier 変換** に進みます。aliasing が「周波数の折り返し」として、より明確に見えるようになります。
 
-→ [Audio ロードマップに戻る](index.md)
+→ [Audio ロードマップに戻る](/audio/)
 
 ## 用語ミニ辞典
 

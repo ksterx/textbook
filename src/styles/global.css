@@ -1,0 +1,133 @@
+/* ============================================================================
+   体系学習テキスト（Astro）— 全スタイル。
+   レイアウト（ヘッダ・左ナビ・右TOC）を自前で持ち、参照稿の意匠を素の外枠にする。
+   ============================================================================ */
+
+:root {
+  --ground: #edf0f3;
+  --panel: #f7f9fb;
+  --text: #14191f;
+  --muted: #5a6573;
+  --hair: #cdd5dd;
+  --accent: #0b6e78;
+  --accent-2: #dd6a2b;
+  --green: #1f8a4c;
+  --purple: #5a3fb0;
+  --s1: #2b1b6b; --s2: #6a1f8e; --s3: #c0317a; --s4: #e8623a; --s5: #f2b33d;
+
+  --serif: Charter, "Iowan Old Style", Georgia, "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+  --sans: "Helvetica Neue", Arial, system-ui, "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--ground); color: var(--text);
+  font-family: var(--serif); font-size: 17px; line-height: 1.72; -webkit-font-smoothing: antialiased;
+}
+
+/* ---- header ---- */
+.site-header {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0.7rem 1.4rem; background: var(--accent); color: #fff; border-bottom: 1px solid #084f57;
+}
+.site-header .brand { color: #fff; font-family: var(--sans); font-weight: 750; text-decoration: none; letter-spacing: -0.01em; }
+.search { min-width: 13rem; }
+
+/* ---- 3カラム ---- */
+.layout {
+  display: grid; grid-template-columns: 14rem minmax(0, 1fr) 14rem; gap: 2rem;
+  max-width: 82rem; margin: 0 auto; padding: 0 1.5rem 5rem;
+}
+.nav-left, .toc { position: sticky; top: 4rem; align-self: start; padding-top: 2rem; font-size: 0.86rem; max-height: calc(100vh - 5rem); overflow-y: auto; }
+.nav-sec { margin-bottom: 1.4rem; }
+.nav-title, .toc-title {
+  font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin: 0 0 0.5rem;
+}
+.nav-left ul, .toc ul { list-style: none; margin: 0; padding: 0; }
+.nav-left li, .toc li { margin: 0.3rem 0; }
+.nav-left a, .toc a { color: var(--muted); text-decoration: none; font-family: var(--sans); display: block; }
+.nav-left a:hover, .toc a:hover { color: var(--accent); }
+.nav-left a.active { color: var(--accent); font-weight: 700; border-left: 2px solid var(--accent); padding-left: 0.5rem; margin-left: -0.6rem; }
+.toc .d3 { padding-left: 0.8rem; font-size: 0.95em; }
+
+/* ---- content ---- */
+.content { padding-top: 2rem; min-width: 0; }
+.content h1, .content h2, .content h3, .content h4 { font-family: var(--sans); font-weight: 750; letter-spacing: -0.01em; line-height: 1.2; }
+.content h1 { font-size: clamp(2rem, 5vw, 2.9rem); margin: 0 0 1rem; }
+.content h2 { font-size: 1.55rem; margin: 2.6rem 0 0.5rem; padding-top: 0.7rem; border-top: 1px solid var(--hair); }
+.content h3 { font-size: 1.08rem; margin: 1.7rem 0 0.4rem; }
+.content p, .content li { margin: 0.7rem 0; }
+.content ul, .content ol { padding-left: 1.2rem; }
+.content a { color: var(--accent); }
+.content hr { border: none; border-top: 1px solid var(--hair); margin: 2.4rem 0; }
+.eyebrow { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--accent); margin: 0 0 1rem; }
+.eyebrow a { color: var(--accent); text-decoration: none; }
+
+/* ---- code ---- */
+.content :not(pre) > code { font-family: var(--mono); font-size: 0.86em; background: #1b2330; color: #d7e3ea; padding: 0.08em 0.4em; border-radius: 3px; }
+.content pre { background: #161d28; border-left: 3px solid var(--accent); border-radius: 5px; padding: 1rem 1.1rem; overflow-x: auto; font-size: 0.82rem; line-height: 1.6; }
+.content pre code { font-family: var(--mono); }
+
+/* ---- callouts（:::note / :::warning / ... → aside.callout.TYPE） ---- */
+.callout { border-radius: 5px; padding: 0.9rem 1.2rem; margin: 1.4rem 0; font-size: 0.97rem; border: 1px solid var(--hair); background: var(--panel); }
+.callout > .tag { display: block; margin: 0 0 0.45rem; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; color: var(--muted); }
+.callout > :first-child { margin-top: 0; }
+.callout > :last-child { margin-bottom: 0; }
+.callout.note, .callout.abstract { background: #0b6e7814; border-color: #0b6e7833; }
+.callout.note > .tag, .callout.abstract > .tag { color: var(--accent); }
+.callout.success { background: #1f8a4c12; border-color: #1f8a4c40; }
+.callout.success > .tag { color: var(--green); }
+.callout.question { background: #5a3fb010; border-color: #5a3fb036; }
+.callout.question > .tag { color: var(--purple); }
+.callout.warn { background: #dd6a2b14; border-color: #dd6a2b40; }
+.callout.warn > .tag { color: var(--accent-2); }
+
+/* ---- details（??? → :::details） ---- */
+details.callout { background: var(--panel); }
+details.callout > summary { cursor: pointer; font-family: var(--sans); font-weight: 700; color: var(--accent); font-size: 0.9rem; }
+details.callout[open] > summary { margin-bottom: 0.6rem; }
+
+/* ---- tables ---- */
+.content table { border-collapse: collapse; width: 100%; font-size: 0.9rem; margin: 1.2rem 0; }
+.content th, .content td { text-align: left; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--hair); vertical-align: top; }
+.content thead th { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--text); }
+.callout table { margin: 0.4rem 0 0; }
+
+/* ---- figures / canvas ---- */
+.content figure { margin: 1.7rem 0; }
+.content canvas { width: 100%; display: block; border: 1px solid var(--hair); border-radius: 5px; background: var(--panel); }
+.content canvas.narrow { max-width: 360px; margin: 0 auto; }
+.fig-cap, .content figcaption { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.04em; color: var(--muted); margin-top: 0.5rem; display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+
+/* ---- math（KaTeX ディスプレイをパネル化） ---- */
+.katex-display { background: var(--panel); border: 1px solid var(--hair); border-left: 3px solid var(--accent); border-radius: 4px; padding: 0.8rem 1rem; margin: 1.3rem 0; overflow-x: auto; overflow-y: hidden; }
+
+/* ---- mermaid ---- */
+.mermaid { margin: 1.6rem 0; text-align: center; }
+
+/* ---- トークングリッド（1フレーム=複数トークン） ---- */
+.tb-tgrid { display: grid; gap: 3px; margin: 1.4rem 0; font-family: var(--mono); font-size: 0.72rem; overflow-x: auto; }
+.tb-tgrid > span { background: var(--panel); border: 1px solid var(--hair); border-radius: 3px; padding: 0.4rem 0.2rem; text-align: center; color: var(--muted); }
+.tb-tgrid > span.sem { background: rgba(11, 110, 120, 0.13); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.tb-tgrid > span.head { background: transparent; border: none; font-weight: 700; }
+
+/* ---- カード（トップの分野一覧） ---- */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin: 1.6rem 0; }
+.cards .card { background: var(--panel); border: 1px solid var(--hair); border-radius: 6px; padding: 1.1rem 1.2rem; }
+.cards .card h3 { margin: 0 0 0.4rem; }
+.cards .card a { font-family: var(--sans); font-weight: 650; text-decoration: none; }
+
+/* ---- ramp ---- */
+.tb-ramp { height: 6px; border-radius: 3px; margin: 1.4rem 0; background: linear-gradient(90deg, var(--s1), var(--s2), var(--s3), var(--s4), var(--s5)); }
+
+/* ---- footer ---- */
+.site-footer { border-top: 1px solid var(--hair); margin-top: 2rem; padding: 1.4rem 1.5rem 3rem; text-align: center; font-family: var(--mono); font-size: 0.74rem; color: var(--muted); }
+
+/* ---- responsive ---- */
+@media (max-width: 62rem) {
+  .layout { grid-template-columns: 1fr; }
+  .nav-left, .toc { position: static; max-height: none; padding-top: 1rem; }
+  .toc { display: none; }
+}
