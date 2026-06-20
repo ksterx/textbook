@@ -141,18 +141,20 @@ details.callout[open] > summary { margin-bottom: 0.6rem; }
   }
   .search { min-width: 0; }
 
-  /* 左ナビを off-canvas ドロワー化（スライドイン） */
+  /* 左ナビを off-canvas ドロワー化（スライドイン）
+     スライドは transform ではなく left で行う。iOS Safari は transform を持つ
+     position:fixed 要素の内部スクロールを壊すため、ここで transform は使わない。 */
   .nav-left {
-    position: fixed; top: 3.2rem; left: 0; bottom: 0;
+    position: fixed; top: 3.2rem; left: -17rem; bottom: 0;
     width: 16rem; max-width: 82vw; margin: 0; max-height: none;
     padding: 1.2rem 1rem 2.5rem;
     background: var(--ground); border-right: 1px solid var(--hair);
     box-shadow: 2px 0 14px rgba(0, 0, 0, 0.14);
     overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
     z-index: 30;
-    transform: translateX(-100%); transition: transform 0.22s ease;
+    transition: left 0.22s ease;
   }
-  body.nav-open .nav-left { transform: translateX(0); }
+  body.nav-open .nav-left { left: 0; }
 
   .nav-backdrop {
     display: block; position: fixed; inset: 3.2rem 0 0 0;
