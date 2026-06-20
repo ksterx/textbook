@@ -1,8 +1,19 @@
-// サイトのナビゲーション定義（分野＝セクション）。章を足したらここに1行追加する。
-// href はルート絶対（base なし）。レイアウトで BASE_URL を前置する。
+// サイトのナビゲーション。トップの分類軸は「モダリティ（入出力の様式）」。
+// 強化学習はモダリティに直交する「横断的な学習パラダイム」として末尾に置く。
+// 章を足したら該当モダリティの items に1行追加する。href はルート絶対（base なし）。
 export const NAV = [
   {
-    domain: 'Audio（音声・音響）',
+    domain: '🗺 全体地図',
+    items: [{ title: 'モダリティ地図', href: '/' }],
+  },
+  {
+    domain: '🔤 言語（LLM）',
+    items: [
+      { title: 'ロードマップ', href: '/llm/' },
+    ],
+  },
+  {
+    domain: '🎵 音声（Audio）',
     items: [
       { title: 'ロードマップ', href: '/audio/' },
       { title: '1. デジタル音声の基礎', href: '/audio/01-digital-audio-basics/' },
@@ -16,15 +27,19 @@ export const NAV = [
     ],
   },
   {
-    domain: '強化学習',
-    items: [{ title: 'ロードマップ', href: '/reinforcement-learning/' }],
+    domain: '👁 視覚（Vision）',
+    items: [{ title: 'ロードマップ', href: '/vision/' }],
   },
   {
-    domain: 'LLM',
-    items: [{ title: 'ロードマップ', href: '/llm/' }],
-  },
-  {
-    domain: 'Physical AI',
+    domain: '🦾 身体性・行動（Physical AI）',
     items: [{ title: 'ロードマップ', href: '/physical-ai/' }],
   },
-];
+  {
+    domain: '🔀 マルチモーダル',
+    items: [{ title: 'ロードマップ', href: '/multimodal/' }],
+  },
+  {
+    domain: '🎯 強化学習（横断的学習パラダイム）',
+    items: [{ title: 'ロードマップ', href: '/reinforcement-learning/' }],
+  },
+]

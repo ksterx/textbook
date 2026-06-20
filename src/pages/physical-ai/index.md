@@ -1,19 +1,25 @@
 ---
 layout: ../../layouts/Page.astro
-title: Physical AI
-description: Physical AI 分野のロードマップ。制御・知覚・sim-to-real まで。
+title: 身体性・行動（Physical AI）
+description: 身体性モダリティのロードマップ。運動学・制御・知覚・学習ベース制御・sim-to-real。
 ---
 
-# Physical AI
+# 身体性・行動（Physical AI）
 
-身体性を持つ AI、すなわちロボットなど物理世界で動くシステムの知能を学びます。
+**身体性（embodiment）モダリティ。** ロボットなど物理世界で動くシステムの知能を学びます。
+入出力が「**行動**（トルク・速度）」と「**センサ知覚**」である点が、言語・音声・視覚と決定的に違います。
 制御・知覚・学習を統合し、シミュレーションから実機へ橋渡しするまでを扱います。
 
-:::abstract[この分野で身につくこと]
+:::abstract[このモダリティで身につくこと]
 - ロボットの運動と座標変換（kinematics）を記述できる
 - 古典制御（PID）と最適制御の基本を理解する
 - センサからの知覚（state estimation）の枠組みを理解する
 - 学習ベース制御と sim-to-real の課題を説明できる
+:::
+
+:::tip[横断軸との接続]
+学習ベース制御は **[強化学習](/reinforcement-learning/)（横断的学習パラダイム）** を身体性モダリティに適用したもの。
+報酬設計・sim-to-real ギャップがここでの鍵です。
 :::
 
 ## 前提知識
