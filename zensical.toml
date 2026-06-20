@@ -88,6 +88,8 @@ extra_javascript = [
   # 設定ファイル(mathjax.js)を先に読み、その後に MathJax 本体を読み込む。
   "javascripts/mathjax.js",
   "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js",
+  # 領域固有の Canvas 図（document$ 購読で instant navigation でも再描画）
+  "javascripts/figures.js",
 ]
 
 # ----------------------------------------------------------------------------

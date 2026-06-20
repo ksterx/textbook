@@ -49,10 +49,10 @@ uv run zensical build    # 静的サイトを site/ に生成
 Claude Code に「次は◯◯の章を書いて」「△△という分野を追加して」と指示すると、
 [`AUTHORING.md`](AUTHORING.md) の規約と `templates/` の雛形に従って、統一フォーマットで生成されます。
 
-手で追加する場合の手順も [`AUTHORING.md`](AUTHORING.md) の §9・§10 にまとめています。
+手で追加する場合の手順も [`AUTHORING.md`](AUTHORING.md) の §10・§11 にまとめています。
 
 ## 各章の構成（フルセット）
 
-学習目標 → 前提知識 → 直感 → 理論 → 数式の導出 → 実装 → 演習 → まとめ → 参考文献
+学習目標 → 前提知識 → 直感 → 全体像 → 理論 → 数式の導出 → 実装 → 演習 → まとめ → 用語ミニ辞典 → 次のアクション → 参考文献
 
-詳細とお手本は [`AUTHORING.md`](AUTHORING.md) と [`docs/audio/01-digital-audio-basics.md`](docs/audio/01-digital-audio-basics.md) を参照してください。
+品質の心臓部は [`AUTHORING.md`](AUTHORING.md) の **§2「説明の深さ基準」**。お手本は [`docs/audio/01-digital-audio-basics.md`](docs/audio/01-digital-audio-basics.md)（Mermaid・Canvas 図・数式・実測コードまで含む完成章）。
