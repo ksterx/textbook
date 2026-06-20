@@ -68,12 +68,12 @@
 
 ## 5. 数式の規約
 
-- インライン数式は `$ ... $`、独立行の数式は `$$ ... $$`（前後に空行）。arithmatex(generic) ＋ MathJax で描画される。
+- インライン数式は `$ ... $`、独立行の数式は `$$ ... $$`（前後に空行）。**KaTeX がビルド時に静的 HTML へレンダー**する（実行時 JS・外部 CDN なし）。
 - 変数は斜体（`$x$`）、ベクトル・行列は太字（`$\mathbf{x}$`, `$\mathbf{W}$`）。
 - 単位やラベルは `\text{}` または `\mathrm{}` で立体に（例: `$f_s\ [\text{Hz}]$`）。
 - 導出の各ステップに 1 行の言葉の説明を添える。証明・導出の終わりは `$\blacksquare$`。
-- 定義・定理は `!!! note "定理"` などの admonition で囲む。
-- ディスプレイ数式はパネル（ティールの左罫）で表示される（`extra.css`）。
+- 定義・定理は `:::note[定理]` などのディレクティブで囲む。
+- ディスプレイ数式はパネル（ティールの左罫）で表示される（`global.css`）。
 
 ## 6. コードの規約
 
@@ -87,66 +87,64 @@
 
 - 図は **Mermaid を第一選択**（`flowchart`, `sequenceDiagram` 等）。手書きの ASCII 図は使わない。
 - **Mermaid で描けない領域固有の図**（波形・スペクトログラム・フィルタ形状・確率分布・信号のプロットなど）は **Canvas** で描く。やり方:
-  - 章の Markdown には**マークアップだけ**を置く: `<figure>` 内に `<canvas class="tb-fig" id="<一意なid>" aria-hidden="true">`、説明は `<figcaption class="tb-canvas-label">`。
-  - 描画関数は [`docs/javascripts/figures.js`](docs/javascripts/figures.js) の `FIGURES` レジストリに `{ "<id>": draw関数 }` を 1 行足して定義する。**章本文に inline `<script>` を書かない** —— `navigation.instant`（再読み込みなし遷移）では本文内の `<script>` が再実行されず、図が消えるため。figures.js は `document$` を購読して各表示で描き直す。
+  - 章の Markdown には**マークアップだけ**を置く: `<figure>` 内に `<canvas id="<一意なid>" aria-hidden="true">`（正方形に近い図は `class="narrow"`）、説明は `<figcaption class="fig-cap">`。
+  - 描画関数は [`public/figures.js`](public/figures.js) の `FIGURES` レジストリに `{ "<id>": draw関数 }` を 1 行足して定義する。**章本文に inline `<script>` を書かない**（描画は figures.js が一括で行う）。
   - **決定的・静的**：ループアニメ禁止、`Math.random()` 禁止（毎回同じ絵になること）。**依存ゼロ**（外部スクリプト/CDN/フォント禁止）。
   - **配色はトークン**（`#0B6E78` ティール / `#DD6A2B` オレンジ / スペクトル ramp）を使う。
 - 表は Markdown のテーブル。状態を示す絵文字は統一: ✅ 公開/Ready ・ 🛠 執筆中/WIP ・ 🚧 予定/Planned ・ 🎯 最終目標/Capstone。
 - **本質的に「視覚・空間的」な図（2 次元の並び・格子・ヒートマップ・波形・分布・トークン表など）は、Markdown の表で代用しない。** 表は値の一覧には良いが、空間構造（積み重なり・対角・連続性・強調）は伝わらない。そういう図は **Canvas（figures.js）か、CSS で組んだ静的 HTML グリッド**（例: `.tb-tgrid`）で描く。静的 HTML はビルドで保持され instant navigation でも崩れない（JS 不要）。**HTML/Canvas の記述量は気にしない**（生成は自動。視覚的わかりやすさを優先する）。
 - **外部資料の画像**（論文の図など）は、公開サイトに無断で埋め込まない（著作権）。原則は**自作の Mermaid / Canvas / HTML 図**。引用が必要なら出典への**リンク**に留め、埋め込むのはライセンスが明確な画像（CC・public domain）またはユーザー提供の画像のみ。
-- **ビジュアルアイデンティティ**は [`docs/stylesheets/extra.css`](docs/stylesheets/extra.css) がトークン（teal/orange/spectral、本文セリフ・見出し角ゴ・コード等幅）を定義。新しい装飾はベタ書きせず、ここにクラスを足す。
+- **ビジュアルアイデンティティ**は [`src/styles/global.css`](src/styles/global.css) がトークン（teal/orange/spectral、本文セリフ・見出し角ゴ・コード等幅）と全レイアウトを定義。新しい装飾はベタ書きせず、ここにクラスを足す。
 
-## 8. 使ってよい Zensical / Markdown 機能（検証済み）
+## 8. 使ってよい機能（Astro・検証済み）
 
-このテキストで使う機能は次に限定する（`zensical.toml` で有効化済み・ビルドで描画確認済み）。
+このテキストは **Astro** 製。本文は Markdown（`src/pages/**.md`）で書き、次の機能を使う。
 
-- Admonitions: `!!! note`, `!!! abstract`, `!!! success`, `!!! question`, `!!! warning` など
-- 折りたたみ: `??? success "解答"`（演習の解答に使う）
-- コードブロック: シンタックスハイライト、`title=`、`hl_lines=`、コピー・行選択ボタン
-- 数式: arithmatex(generic) ＋ MathJax
-- 図: Mermaid（superfences の custom fence）／ inline Canvas（§7 の制約内）
-- 絵文字: twemoji の **Unicode 絵文字**（🎵 🤖 など）
-- グリッドカード: `<div class="grid cards" markdown>`（トップページのみ）
+- **Admonitions = `:::` ディレクティブ**（`!!!` ではない）:
+  `:::note[タイトル]` … `:::` ／ `:::abstract` ／ `:::success` ／ `:::question` ／ `:::warning` ／ `:::tip`。
+- **折りたたみ**: `:::details[解答]` … `:::`。演習は外4コロン・内3コロンでネスト:
+  `::::question[演習 1: …]` … `:::details[解答]` … `:::` … `::::`。
+- **数式**: `$...$` / `$$...$$`（KaTeX がビルド時にレンダー＝CDN なし）。
+- **コード**: ` ```python title="..." `（Shiki ハイライト）。
+- **図**: ` ```mermaid ` フェンス（ローカルバンドルの mermaid で描画）／ Canvas（`public/figures.js` に登録）／ CSS グリッド（`.tb-tgrid` など）。
+- **絵文字**: Unicode 絵文字（🎵 🤖 など）。
+- **カード**: `<div class="cards"><div class="card">…</div></div>`（トップページ）。
+- **内部リンク**: ルート絶対で書く（base は自動付与）。例 `[x](/audio/02-frequency-and-features/)`。
 
-!!! warning "避けるもの"
-
-    - `:material-xxx:` `:octicons-xxx:` などの **アイコン用ショートコード**（描画が不確実）。本文では Unicode 絵文字か、矢印 `→` で代替する。なお frontmatter の `icon: lucide/...`（ページアイコン）は使ってよいが、**実在する名前**に限る（例: `audio-waveform` は可・`waveform` は不可）。
-    - 新しい依存ライブラリや Markdown 拡張を、`zensical.toml` を更新せずに使うこと。
+:::warning[避けるもの]
+- `:material-...:` 等のアイコンショートコード（Astro では未対応）。Unicode 絵文字か `→` で代替。
+- 新しい依存ライブラリや構文を、`package.json` / `astro.config.mjs` を更新せずに使うこと。
+:::
 
 ## 9. ディレクトリと命名
 
 ```text
-docs/
+src/pages/
   index.md                     # トップ（全体マップ）
   <domain>/
-    index.md                   # 分野ランディング（ロードマップ）
-    NN-<slug>.md               # 章。NN は 2 桁ゼロ詰め（01, 02, ...）、slug は英小文字ハイフン区切り
+    index.md                   # 分野ランディング（ロードマップ） → URL /<domain>/
+    NN-<slug>.md               # 章 → URL /<domain>/NN-<slug>/。NN は 2 桁ゼロ詰め、slug は英小文字ハイフン区切り
+src/lib/nav.mjs                # ナビゲーション定義（章を足したら 1 行追加）
+public/figures.js              # 領域固有の Canvas 図のレジストリ
+src/styles/global.css          # 全スタイル
 ```
 
-- 分野ディレクトリ名は **英小文字ハイフン区切り**（例: `reinforcement-learning`）。
-- 章ファイルは `NN-<slug>.md`。番号は学ぶ順序を表す。
+- frontmatter は `layout: ../../layouts/Page.astro` ／ `title:` ／ `description:`（`index.md` は `../layouts/Page.astro`）。
 
 ## 10. 新しい章を追加する手順
 
-1. [`templates/chapter-template.md`](templates/chapter-template.md) を `docs/<domain>/NN-<slug>.md` にコピーする。
+1. [`templates/chapter-template.md`](templates/chapter-template.md) を `src/pages/<domain>/NN-<slug>.md` にコピーする。
 2. プレースホルダをすべて埋める（§2 の深さ基準・§4 の構成順に従う）。
-3. `zensical.toml` の `nav` の、その分野のセクション配列に 1 行追加する:
-   `{ "N. <章タイトル>" = "<domain>/NN-<slug>.md" },`
-4. `docs/<domain>/index.md` の「章一覧」の状態を ✅ に更新し、リンクを張る。
-5. `uv run zensical build` でビルドが通ることを確認する。
+3. [`src/lib/nav.mjs`](src/lib/nav.mjs) の該当分野の `items` に追加:
+   `{ title: 'N. <章タイトル>', href: '/<domain>/NN-<slug>/' },`
+4. `src/pages/<domain>/index.md` の「章一覧」の状態を ✅ に更新し、リンクを張る。
+5. `npm run build` がエラーなく通ることを確認する（`npm run dev` でプレビュー）。
 
 ## 11. 新しい分野を追加する手順
 
-1. `docs/<domain>/` を作り、[`templates/domain-index-template.md`](templates/domain-index-template.md) を `docs/<domain>/index.md` にコピーして埋める。
-   - **North Star（最終目標）** を冒頭に置く。
-   - ロードマップの各ステージに **学ぶ / 橋渡し / 作る** の 3 観点と、状態 chip（✅🛠🚧🎯）を付ける。
-2. `zensical.toml` の `nav` にトップレベルのセクションを 1 つ追加する:
-   ```toml
-   { "<分野名（日本語）>" = [
-     "<domain>/index.md",
-   ] },
-   ```
-3. トップページ [`docs/index.md`](docs/index.md) の「分野一覧」カードに 1 枚追加する。
+1. `src/pages/<domain>/` を作り、[`templates/domain-index-template.md`](templates/domain-index-template.md) を `index.md` にコピーして埋める（North Star ＋ 学ぶ/橋渡し/作る ＋ 状態 chip）。
+2. [`src/lib/nav.mjs`](src/lib/nav.mjs) にトップレベルのセクションを 1 つ追加する。
+3. トップページ [`src/pages/index.md`](src/pages/index.md) の「分野一覧」カードに 1 枚追加する。
 4. 最初の章を「10. 新しい章を追加する手順」に従って書く。
 
 ## 12. 品質チェックリスト（章を「完成」とする前に）
@@ -161,5 +159,5 @@ docs/
 - [ ] 演習が 2 問以上あり、折りたたみ解答が付いている
 - [ ] 用語ミニ辞典・次のアクション（最小実装）がある
 - [ ] 参考文献に原典がある
-- [ ] `uv run zensical build` がエラー・警告なく通る
-- [ ] `nav` と分野 index の章一覧が更新されている
+- [ ] `npm run build` がエラーなく通る
+- [ ] `src/lib/nav.mjs` と分野 index の章一覧が更新されている
