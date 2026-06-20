@@ -109,6 +109,35 @@
   margin-top: 0.5rem;
 }
 
+/* ---- トークングリッド：1フレーム=複数トークンの2次元表（HTML+CSS, JS不要） ---- */
+.md-typeset .tb-tgrid {
+  display: grid;
+  gap: 3px;
+  margin: 1.4rem 0;
+  font-family: var(--tb-mono);
+  font-size: 0.72rem;
+  overflow-x: auto;
+}
+.md-typeset .tb-tgrid > span {
+  background: var(--tb-panel);
+  border: 1px solid var(--tb-hair);
+  border-radius: 3px;
+  padding: 0.4rem 0.2rem;
+  text-align: center;
+  color: var(--tb-muted);
+}
+.md-typeset .tb-tgrid > span.sem {
+  background: rgba(11, 110, 120, 0.13);
+  border-color: var(--tb-accent);
+  color: var(--tb-accent);
+  font-weight: 700;
+}
+.md-typeset .tb-tgrid > span.head {
+  background: transparent;
+  border: none;
+  font-weight: 700;
+}
+
 /* ---- スペクトル ramp の細帯（任意の区切り装飾） ---- */
 .tb-ramp {
   height: 6px;

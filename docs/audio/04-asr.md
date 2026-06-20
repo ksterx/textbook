@@ -210,9 +210,36 @@ flowchart LR
   F2 -->|"→"| L["LayerNorm<br/>出力"]
 ```
 
-- **½-step FFN を前後に2つ（macaron）**：FFN を半分ずつ挟む。Transformer の FFN 1個より表現力が上がる経験則（お菓子のマカロン状なのが名の由来）。
+- **½-step FFN を前後に2つ（macaron）**：attention を 2 つの FFN で挟む構造。Transformer の FFN 1 個より表現力が上がる経験則（中身は下の「½ FFN とは何か」で詳説）。
 - **MHSA + 相対位置エンコーディング**：絶対位置でなく**位置の差**で効かせる（Transformer-XL 流）。音声は長さがバラバラなので相対位置の方が汎化する —— **LLM の RoPE と同じ動機**。
 - **Conv module の内部パイプライン**：`pointwise → GLU → depthwise conv → BatchNorm → Swish → pointwise`。**depthwise conv** はチャネル独立で軽く、隣接フレームの局所時間パターンを拾う担当。
+
+### ½ FFN とは何か（half-step FFN）
+
+まず **FFN（feed-forward network・位置ごとの全結合）** が何かをはっきりさせます。Transformer や Conformer の各ブロックには、attention とは別に、**各フレームを独立に通す 2 層の MLP** が入っています。
+
+$$\mathrm{FFN}(x) = W_2\,\sigma(W_1 x + b_1) + b_2$$
+
+- 次元を $d \to d_{ff}$（例 $d_{ff}=4d$）に広げ、活性化（Conformer は **Swish**）を通し、$d_{ff} \to d$ に戻す。
+- **位置ごと（frame-wise）に独立**に適用する。attention が「フレーム**間**（位置方向）を混ぜる」のに対し、FFN は「各フレーム**内**のチャネル（特徴）を混ぜる」担当。役割が直交している。これは **LLM の Transformer ブロックの FFN とまったく同じもの**。
+
+次が躓きどころの「**½（half-step）**」。素の Transformer ブロックは FFN が **1 個**で、残差に**等倍**で足します。
+
+$$x \leftarrow x + \mathrm{FFN}(x)$$
+
+Conformer は FFN を **2 個**（attention の**前**と**後**）に置き、それぞれの出力を **½ 倍**してから足します。
+
+$$x \leftarrow x + \tfrac{1}{2}\,\mathrm{FFN}_{\text{pre}}(x)\quad(\text{前})\,,\qquad\qquad x \leftarrow x + \tfrac{1}{2}\,\mathrm{FFN}_{\text{post}}(x)\quad(\text{後})$$
+
+!!! warning "「半分」の意味を取り違えない"
+
+    「½」は **FFN モジュールの中身が小さい／半分になる**という意味では**ありません**（$W_1, W_2$ は普通サイズ）。**残差接続への足し込みを 0.5 倍する（half-step）** という意味です。前後で 2 回・各 0.5 倍なので、足し込まれる総量は「FFN 1 個ぶん」に近いですが、その 1 個ぶんを **attention の前後に半歩ずつ分けて配置**するのがポイントです。
+
+**なぜ前後に挟むと良いのか（macaron の由来）。** Transformer ブロックを「微分方程式を数値的に解く 1 ステップ」とみなす見方があります（Macaron Net, Lu et al. 2019）。その 1 ステップを「FFN を丸ごと 1 回」ではなく「**半歩の FFN → attention → 半歩の FFN**」と前後対称に分割（Strang splitting 的）すると、同じ計算量でも近似がきれいになり、経験的に WER が下がります。形が **ビスケット 2 枚（½ FFN）で具（attention）を挟んだマカロン**に見えるのが名前の由来です。
+
+!!! note "LLM ↔ Speech"
+
+    FFN は LLM の Transformer ブロックにある FFN と同一（位置ごとのチャネル混合）。Conformer はそれを **0.5 倍 × 2（前後）** に置き換えただけ。「attention＝位置を混ぜる／FFN＝チャネルを混ぜる」という役割分担も LLM と共通です。
 
 ### FastConformer：ダウンサンプルで $O(L^2)$ を殺す
 
@@ -380,3 +407,4 @@ $$\mathrm{WER}=\frac{S+D+I}{N}$$
 6. J. Yu et al., "FastEmit: Low-latency Streaming ASR with Sequence-level Emission Regularization," *ICASSP*, 2021.
 7. NVIDIA NeMo, Parakeet / Canary / Nemotron-ASR-Streaming（2025–26 時点。実装前に最新版を再確認）。
 8. Kyutai, "Delayed Streams Modeling" / Kyutai STT（streaming 音声認識、2025）。
+9. Y. Lu et al., "Understanding and Improving Transformer From a Multi-Particle Dynamic System Point of View," 2019.（Macaron Net・½-step FFN の由来）

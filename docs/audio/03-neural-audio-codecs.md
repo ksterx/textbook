@@ -159,20 +159,23 @@ flowchart LR
 
 ### 1 フレーム = 複数トークン（重要）
 
-時間軸 $T$ フレーム × 量子化段 $N_q$ 段 の **2 次元のトークン表** になります。下は Mimi 風（$N_q = 8$、先頭 = semantic）のイメージです（時刻 t0–t5、段 sem・q1–q7 に縮小した例示）。
+時間軸 $T$ フレーム × 量子化段 $N_q$ 段 の **2 次元のトークン表** になります。下は Mimi 風（$N_q = 8$、先頭 = semantic）のイメージです（時刻 t0–t5 に縮小）。**各列が 1 フレーム**で、その列に縦 $N_q$ 個のトークンが積まれます。teal の行が semantic、その下が acoustic の残差段（q1 → q7 と進むほど細かい誤差を補正）。
 
-| 段 ＼ 時刻 | t0 | t1 | t2 | t3 | t4 | t5 |
-| --- | --- | --- | --- | --- | --- | --- |
-| **sem** | 6 | 13 | 20 | 27 | 34 | 41 |
-| q1 | 19 | 26 | 33 | 40 | 47 | 54 |
-| q2 | 32 | 39 | 46 | 53 | 60 | 67 |
-| q3 | 45 | 52 | 59 | 66 | 73 | 80 |
-| q4 | 58 | 65 | 72 | 79 | 86 | 93 |
-| q5 | 71 | 78 | 85 | 92 | 99 | 7 |
-| q6 | 84 | 91 | 98 | 6 | 13 | 20 |
-| q7 | 97 | 5 | 12 | 19 | 26 | 33 |
+<div class="tb-tgrid" style="grid-template-columns: 2.4rem repeat(6, minmax(2.2rem, 1fr));">
+<span class="head"></span><span class="head">t0</span><span class="head">t1</span><span class="head">t2</span><span class="head">t3</span><span class="head">t4</span><span class="head">t5</span>
+<span class="head">sem</span><span class="sem">6</span><span class="sem">13</span><span class="sem">20</span><span class="sem">27</span><span class="sem">34</span><span class="sem">41</span>
+<span class="head">q1</span><span>19</span><span>26</span><span>33</span><span>40</span><span>47</span><span>54</span>
+<span class="head">q2</span><span>32</span><span>39</span><span>46</span><span>53</span><span>60</span><span>67</span>
+<span class="head">q3</span><span>45</span><span>52</span><span>59</span><span>66</span><span>73</span><span>80</span>
+<span class="head">q4</span><span>58</span><span>65</span><span>72</span><span>79</span><span>86</span><span>93</span>
+<span class="head">q5</span><span>71</span><span>78</span><span>85</span><span>92</span><span>99</span><span>7</span>
+<span class="head">q6</span><span>84</span><span>91</span><span>98</span><span>6</span><span>13</span><span>20</span>
+<span class="head">q7</span><span>97</span><span>5</span><span>12</span><span>19</span><span>26</span><span>33</span>
+</div>
 
-各セルがトークン ID です。**列が 1 フレーム** で、その列に縦 $N_q$ 個（ここでは 8 個）のトークンが積まれます。テキストの「1 次元トークン列」と違い、各時刻に縦 $N_q$ 個積まれます。言語モデルに食わせるには、この 2 次元をどう 1 次元に並べるか（flatten / delay pattern）という設計が要ります（後述の「Phase 03/04 への橋渡し」）。
+*各セルがトークン ID。縦 1 列が 1 フレーム = 同時刻に積まれる $N_q$ 個のトークン。*
+
+テキストの「1 次元トークン列」と違い、各時刻に縦 $N_q$ 個積まれます。言語モデルに食わせるには、この 2 次元をどう 1 次元に並べるか（flatten / delay pattern）という設計が要ります（後述の「Phase 03/04 への橋渡し」）。
 
 ## コーデックの全体像：量子化付きオートエンコーダ
 
