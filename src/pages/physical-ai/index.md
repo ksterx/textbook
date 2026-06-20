@@ -37,6 +37,8 @@ flowchart TD
   C3 --> C4[4. 最適制御]
   C4 --> C5[5. 知覚と状態推定]
   C5 --> C6[6. 学習ベース制御と sim-to-real]
+  C6 --> C7[7. シミュレーション環境<br/>とハードウェア]
+  C7 --> C8[8. VLA・ロボット基盤モデル<br/>π0 等]
 ```
 
 ## 章一覧
@@ -49,6 +51,8 @@ flowchart TD
 | 4 | [最適制御 — LQR](/physical-ai/04-optimal-control/) | ✅ 公開 |
 | 5 | [知覚と状態推定 — カルマンフィルタ](/physical-ai/05-perception-state-estimation/) | ✅ 公開 |
 | 6 | [学習ベース制御と sim-to-real](/physical-ai/06-learning-based-control-sim2real/) | ✅ 公開 |
+| 7 | [シミュレーション環境とハードウェア](/physical-ai/07-simulation-and-hardware/) | ✅ 公開 |
+| 8 | [VLA とロボット基盤モデル（π0 等）](/physical-ai/08-vla-foundation-models/) | ✅ 公開 |
 
 :::note[章は順次追加されます]
 「次は◯◯の章を書いて」と指示すると、統一フォーマットで新しい章が追加されます。

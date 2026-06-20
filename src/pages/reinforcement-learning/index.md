@@ -39,6 +39,7 @@ flowchart TD
   C4 --> C5[5. 関数近似と DQN]
   C5 --> C6[6. 方策勾配法]
   C6 --> C7[7. Actor-Critic]
+  C7 --> C8[8. 現代の深層強化学習<br/>地図・応用・トレンド]
 ```
 
 ## 章一覧
@@ -52,6 +53,7 @@ flowchart TD
 | 5 | [関数近似と DQN](/reinforcement-learning/05-function-approximation-dqn/) | ✅ 公開 |
 | 6 | [方策勾配法 — REINFORCE](/reinforcement-learning/06-policy-gradient/) | ✅ 公開 |
 | 7 | [Actor-Critic](/reinforcement-learning/07-actor-critic/) | ✅ 公開 |
+| 8 | [現代の深層強化学習 — 地図・応用・研究トレンド](/reinforcement-learning/08-modern-deep-rl/) | ✅ 公開 |
 
 :::note[章は順次追加されます]
 「次は◯◯の章を書いて」と指示すると、統一フォーマットで新しい章が追加されます。

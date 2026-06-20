@@ -55,6 +55,8 @@ export const NAV = [
       { title: '4. 最適制御（LQR）', href: '/physical-ai/04-optimal-control/' },
       { title: '5. 知覚と状態推定（Kalman）', href: '/physical-ai/05-perception-state-estimation/' },
       { title: '6. 学習ベース制御・sim-to-real', href: '/physical-ai/06-learning-based-control-sim2real/' },
+      { title: '7. シミュレーション環境とハードウェア', href: '/physical-ai/07-simulation-and-hardware/' },
+      { title: '8. VLA・ロボット基盤モデル（π0 等）', href: '/physical-ai/08-vla-foundation-models/' },
     ],
   },
   {
@@ -79,6 +81,7 @@ export const NAV = [
       { title: '5. 関数近似と DQN', href: '/reinforcement-learning/05-function-approximation-dqn/' },
       { title: '6. 方策勾配法', href: '/reinforcement-learning/06-policy-gradient/' },
       { title: '7. Actor-Critic', href: '/reinforcement-learning/07-actor-critic/' },
+      { title: '8. 現代の深層強化学習（地図）', href: '/reinforcement-learning/08-modern-deep-rl/' },
     ],
   },
 ]
