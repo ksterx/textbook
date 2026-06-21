@@ -113,6 +113,12 @@ details.callout[open] > summary { margin-bottom: 0.6rem; }
 
 /* ---- math（KaTeX ディスプレイをパネル化） ---- */
 .katex-display { background: var(--panel); border: 1px solid var(--hair); border-left: 3px solid var(--accent); border-radius: 4px; padding: 0.8rem 1rem; margin: 1.3rem 0; overflow-x: auto; overflow-y: hidden; }
+/* 数式は式の途中で改行しない（インラインも1単位に保つ）。横長ならその式の箱だけ横スクロールさせ、
+   折り返しでバラバラに見えるのを防ぐ。ディスプレイ数式は外側 .katex-display 側がスクロールを担当。 */
+.content .katex { white-space: nowrap; display: inline-block; max-width: 100%; overflow-x: auto; overflow-y: hidden; vertical-align: bottom; }
+.katex-display > .katex { display: block; max-width: none; overflow: visible; vertical-align: baseline; }
+/* スマホでは横長ディスプレイ数式を左寄せにして「先頭」から見え、右へスクロールできるように */
+@media (max-width: 62rem) { .katex-display > .katex { text-align: left; } }
 
 /* ---- mermaid ---- */
 .mermaid { margin: 1.6rem 0; text-align: center; }
