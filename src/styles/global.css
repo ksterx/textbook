@@ -142,11 +142,16 @@ details.callout[open] > summary { margin-bottom: 0.6rem; }
   .search { min-width: 0; }
 
   /* 左ナビを off-canvas ドロワー化（スライドイン）
-     スライドは transform ではなく left で行う。iOS Safari は transform を持つ
-     position:fixed 要素の内部スクロールを壊すため、ここで transform は使わない。 */
+     - スライドは transform ではなく left で行う（transform を持つ fixed 要素は
+       iOS で内部スクロールが壊れるため）。
+     - 高さは bottom:0 ではなく明示 height にする。position:fixed で top+bottom の
+       二点指定だと、この構成では高さが中身全高に伸びてスクロールできなくなる。 */
   .nav-left {
-    position: fixed; top: 3.2rem; left: -17rem; bottom: 0;
-    width: 16rem; max-width: 82vw; margin: 0; max-height: none;
+    position: fixed; top: 3.2rem; left: -17rem;
+    width: 16rem; max-width: 82vw; margin: 0;
+    height: calc(100vh - 3.2rem);
+    height: calc(100dvh - 3.2rem);
+    max-height: none;
     padding: 1.2rem 1rem 2.5rem;
     background: var(--ground); border-right: 1px solid var(--hair);
     box-shadow: 2px 0 14px rgba(0, 0, 0, 0.14);
@@ -157,7 +162,8 @@ details.callout[open] > summary { margin-bottom: 0.6rem; }
   body.nav-open .nav-left { left: 0; }
 
   .nav-backdrop {
-    display: block; position: fixed; inset: 3.2rem 0 0 0;
+    display: block; position: fixed; top: 0; left: 0; right: 0;
+    width: 100%; height: 100vh; height: 100dvh;
     background: rgba(0, 0, 0, 0.4); z-index: 25;
     opacity: 0; pointer-events: none; transition: opacity 0.22s ease;
   }
