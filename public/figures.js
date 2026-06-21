@@ -10,6 +10,7 @@
     "attn-heat": drawAttnHeat,
     "chunk-mask": drawChunkMask,
     "flow-vs-diffusion": drawFlowVsDiffusion,
+    "euler-steps": drawEulerSteps,
   };
 
   function redraw() {
@@ -231,5 +232,51 @@
 
     panel(0, "diffusion", "曲がった道・多ステップ", true, 16, ORANGE);
     panel(panelW + gap, "flow matching (OT)", "まっすぐ・少ステップ", false, 5, TEAL);
+  }
+
+  // audio/07: ODE を Euler で積分する「1ステップの中身」。各点で速度を評価し、Δt だけ進む、を N 回。
+  function drawEulerSteps(c) {
+    var ctx = c.getContext("2d"), W = c.width, H = c.height; ctx.clearRect(0, 0, W, H);
+    var ml = 90, mr = 90, mt = 156, mb = 100;
+    var plotW = W - ml - mr;
+    var midY = (mt + (H - mb)) / 2, amp = (H - mt - mb) / 2 - 56;
+    function cx(t) { return ml + t * plotW; }
+    function cy(t) { return midY + amp * Math.cos(Math.PI * t); } // 左下→右上の弧（曲がった一般のODE経路）
+    var N = 5;
+    var P = [];
+    for (var k = 0; k <= N; k++) { var t = k / N; P.push([cx(t), cy(t)]); }
+
+    // 本来の連続経路（薄い破線）。折れ線（N ステップ）はこれを近似する。
+    ctx.strokeStyle = HAIR; ctx.lineWidth = 2.5; ctx.setLineDash([9, 9]); ctx.beginPath();
+    for (var s = 0; s <= 120; s++) { var tt = s / 120, x = cx(tt), y = cy(tt); if (s === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.stroke(); ctx.setLineDash([]);
+
+    // 各ステップ：teal セグメント（Δt·v だけ進む）＋ orange 矢印（その点で評価した速度の向き）
+    for (var k2 = 0; k2 < N; k2++) {
+      var a = P[k2], b = P[k2 + 1];
+      ctx.strokeStyle = "rgba(11,110,120,0.9)"; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+      var ang = Math.atan2(b[1] - a[1], b[0] - a[0]), r = 20;
+      ctx.fillStyle = ORANGE; ctx.beginPath();
+      ctx.moveTo(b[0] + Math.cos(ang) * r, b[1] + Math.sin(ang) * r);
+      ctx.lineTo(b[0] + Math.cos(ang + 2.5) * r, b[1] + Math.sin(ang + 2.5) * r);
+      ctx.lineTo(b[0] + Math.cos(ang - 2.5) * r, b[1] + Math.sin(ang - 2.5) * r);
+      ctx.closePath(); ctx.fill();
+    }
+
+    // 点と t ラベル
+    for (var k3 = 0; k3 <= N; k3++) {
+      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(P[k3][0], P[k3][1], 10, 0, 7); ctx.fill();
+      ctx.fillStyle = MUTED; ctx.font = "23px ui-monospace,Menlo,monospace"; ctx.textAlign = "center";
+      ctx.fillText("t=" + (k3 / N).toFixed(1), P[k3][0], H - mb + 40);
+    }
+    ctx.fillStyle = INK; ctx.font = "bold 27px ui-monospace,Menlo,monospace"; ctx.textAlign = "center";
+    ctx.fillText("x0（ノイズ）", P[0][0] + 30, P[0][1] + 44);
+    ctx.fillText("x1（mel）", P[N][0] - 20, P[N][1] - 26);
+
+    // 上部の手順注記
+    ctx.textAlign = "left"; ctx.font = "27px ui-monospace,Menlo,monospace";
+    ctx.fillStyle = ORANGE; ctx.fillText("① 今いる点で速度 vθ(x, t, c) を1回評価（向き = 矢印）", ml, 54);
+    ctx.fillStyle = TEAL; ctx.fillText("② x ← x + Δt·v でほんの少し進む → 次の点でまた評価", ml, 96);
+    ctx.fillStyle = MUTED; ctx.fillText("これを N 回（= NFE）。破線 = 本来の連続経路、折れ線 = N ステップの近似", ml, 138);
   }
 })();
