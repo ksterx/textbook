@@ -9,6 +9,7 @@
     "rnnt-lattice": drawRnntLattice,
     "attn-heat": drawAttnHeat,
     "chunk-mask": drawChunkMask,
+    "flow-vs-diffusion": drawFlowVsDiffusion,
   };
 
   function redraw() {
@@ -164,5 +165,71 @@
     for (var b = 0; b <= T; b += chunk) { var p = pad + b * s; ctx.beginPath(); ctx.moveTo(p, pad); ctx.lineTo(p, H - pad); ctx.stroke(); ctx.beginPath(); ctx.moveTo(pad, p); ctx.lineTo(W - pad, p); ctx.stroke(); }
     ctx.fillStyle = MUTED; ctx.font = "28px ui-monospace,Menlo,monospace"; ctx.textAlign = "center";
     ctx.fillText("key（参照先 t）→", W / 2, H - 2);
+  }
+
+  // audio/07: diffusion（曲がった道・多ステップ）vs flow matching（OT 直線・少ステップ）
+  // 同じノイズ x0 から同じデータ x1 へ運ぶが、軌道の「形」と必要ステップ数が違うことを対比する。
+  function drawFlowVsDiffusion(c) {
+    var ctx = c.getContext("2d"), W = c.width, H = c.height; ctx.clearRect(0, 0, W, H);
+    var seed = 7;
+    function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+    function gss() { return rnd() + rnd() + rnd() + rnd() - 2; } // 近似ガウス
+
+    var gap = 70, panelW = (W - gap) / 2;
+
+    // 両パネル共通：ノイズ点の縦位置と、その対応データ点（上下2クラスタ）。始点・終点は左右で同一。
+    var N = 6, src = [], tgt = [];
+    for (var i = 0; i < N; i++) { src.push(0.5 + gss() * 0.09); tgt.push(i % 2 === 0 ? 0.30 : 0.70); }
+    var srcCloud = [], tgtCloud = [];
+    for (var k = 0; k < 80; k++) srcCloud.push(0.5 + gss() * 0.11);
+    for (var k = 0; k < 50; k++) tgtCloud.push(k % 2 === 0 ? 0.30 + gss() * 0.03 : 0.70 + gss() * 0.03);
+
+    function vAt(t, sy, ty, dir, curved, i) {
+      var v = sy + (ty - sy) * t;
+      if (curved) v += Math.sin(Math.PI * t) * 0.17 * dir + Math.sin(Math.PI * 5 * t + i) * 0.025;
+      return v;
+    }
+
+    function panel(ox, name, sub, curved, steps, col) {
+      var bx0 = ox + 40, bx1 = ox + panelW - 40, byT = 110, byB = H - 100;
+      var L = bx0 + 78, R = bx1 - 86;
+      function X(u) { return L + u * (R - L); }
+      function Y(v) { return byT + 34 + v * (byB - byT - 68); }
+
+      ctx.strokeStyle = HAIR; ctx.lineWidth = 1.5; ctx.strokeRect(bx0, byT, bx1 - bx0, byB - byT);
+      ctx.textAlign = "center";
+      ctx.fillStyle = col; ctx.font = "bold 34px ui-monospace,Menlo,monospace"; ctx.fillText(name, ox + panelW / 2, 50);
+      ctx.fillStyle = MUTED; ctx.font = "27px ui-monospace,Menlo,monospace"; ctx.fillText(sub, ox + panelW / 2, 90);
+
+      ctx.fillStyle = "rgba(90,101,115,0.32)";
+      for (var k = 0; k < srcCloud.length; k++) { ctx.beginPath(); ctx.arc(X(0) + gss() * 11, Y(srcCloud[k]), 5, 0, 7); ctx.fill(); }
+      ctx.fillStyle = "rgba(11,110,120,0.34)";
+      for (var k = 0; k < tgtCloud.length; k++) { ctx.beginPath(); ctx.arc(X(1) + gss() * 11, Y(tgtCloud[k]), 5, 0, 7); ctx.fill(); }
+
+      for (var i = 0; i < N; i++) {
+        var sy = src[i], ty = tgt[i], dir = (i % 2 ? 1 : -1);
+        ctx.strokeStyle = curved ? "rgba(221,106,43,0.8)" : "rgba(11,110,120,0.8)"; ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (var s = 0; s <= 80; s++) { var t = s / 80, px = X(t), py = Y(vAt(t, sy, ty, dir, curved, i)); if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+        ctx.stroke();
+        ctx.fillStyle = col;
+        for (var s2 = 0; s2 <= steps; s2++) { var t2 = s2 / steps; ctx.beginPath(); ctx.arc(X(t2), Y(vAt(t2, sy, ty, dir, curved, i)), curved ? 6 : 9, 0, 7); ctx.fill(); }
+        if (!curved) {
+          var t0 = 0.5, ang = Math.atan2(Y(ty) - Y(sy), R - L), hx = X(t0), hy = Y(vAt(t0, sy, ty, dir, curved, i)), a = 21;
+          ctx.beginPath();
+          ctx.moveTo(hx + Math.cos(ang) * a, hy + Math.sin(ang) * a);
+          ctx.lineTo(hx + Math.cos(ang + 2.5) * a, hy + Math.sin(ang + 2.5) * a);
+          ctx.lineTo(hx + Math.cos(ang - 2.5) * a, hy + Math.sin(ang - 2.5) * a);
+          ctx.closePath(); ctx.fill();
+        }
+      }
+      ctx.fillStyle = MUTED; ctx.font = "26px ui-monospace,Menlo,monospace"; ctx.textAlign = "center";
+      ctx.fillText("x0 ~ N(0,I)", X(0), byB + 38);
+      ctx.fillText("x1（データ = mel）", X(1), byB + 38);
+      ctx.fillStyle = HAIR; ctx.fillText("t: 0 → 1", ox + panelW / 2, byB + 74);
+    }
+
+    panel(0, "diffusion", "曲がった道・多ステップ", true, 16, ORANGE);
+    panel(panelW + gap, "flow matching (OT)", "まっすぐ・少ステップ", false, 5, TEAL);
   }
 })();
