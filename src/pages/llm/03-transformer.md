@@ -184,8 +184,13 @@ SwiGLU は**ゲート付き**（入力自身で「どの成分を通すか」を
 
 ここが本章の心臓です。attention も FFN も、**生では使いません**。必ず「正規化 → 処理 → 残差で足し戻す」で包みます。現代の標準（pre-norm）はこう書けます。
 
-$$x \leftarrow x + \mathrm{Attn}(\mathrm{Norm}(x))\qquad\text{（attention サブブロック）}$$
-$$x \leftarrow x + \mathrm{FFN}(\mathrm{Norm}(x))\qquad\text{（FFN サブブロック）}$$
+$$
+x \leftarrow x + \mathrm{Attn}(\mathrm{Norm}(x))\qquad\text{（attention サブブロック）}
+$$
+
+$$
+x \leftarrow x + \mathrm{FFN}(\mathrm{Norm}(x))\qquad\text{（FFN サブブロック）}
+$$
 
 この形が持つ意味を分解します。
 
