@@ -11,6 +11,11 @@
     "chunk-mask": drawChunkMask,
     "flow-vs-diffusion": drawFlowVsDiffusion,
     "euler-steps": drawEulerSteps,
+    "conv-slide": drawConvSlide,
+    "clip-matrix": drawClipMatrix,
+    "pid-response": drawPidResponse,
+    "gridworld-value": drawGridworldValue,
+    "scaling-law": drawScalingLaw,
   };
 
   function redraw() {
@@ -278,5 +283,104 @@
     ctx.fillStyle = ORANGE; ctx.fillText("① 今いる点で速度 vθ(x, t, c) を1回評価（向き = 矢印）", ml, 54);
     ctx.fillStyle = TEAL; ctx.fillText("② x ← x + Δt·v でほんの少し進む → 次の点でまた評価", ml, 96);
     ctx.fillStyle = MUTED; ctx.fillText("これを N 回（= NFE）。破線 = 本来の連続経路、折れ線 = N ステップの近似", ml, 138);
+  }
+
+  // vision/01: 畳み込み — 3×3 カーネルを入力で滑らせ、窓の9マスが出力の1マスになる（重み共有）
+  function drawConvSlide(c) {
+    var ctx = c.getContext("2d"), W = c.width, H = c.height; ctx.clearRect(0, 0, W, H);
+    var n = 7, m = 5, cs = 72, g = 2, ix = 70, iy = 150, ox = ix + n * cs + 250, oy = iy + cs;
+    function cell(x, y, fill, stroke, lw) { ctx.fillStyle = fill; ctx.fillRect(x, y, cs - g, cs - g); ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.strokeRect(x, y, cs - g, cs - g); }
+    for (var r = 0; r < n; r++) for (var col = 0; col < n; col++) cell(ix + col * cs, iy + r * cs, "#eef1f4", HAIR, 1);
+    var kr = 1, kc = 2;
+    for (var a = 0; a < 3; a++) for (var b = 0; b < 3; b++) cell(ix + (kc + b) * cs, iy + (kr + a) * cs, "rgba(221,106,43,0.30)", ORANGE, 3);
+    for (var r2 = 0; r2 < m; r2++) for (var col2 = 0; col2 < m; col2++) cell(ox + col2 * cs, oy + r2 * cs, "#eef1f4", HAIR, 1);
+    var oxc = ox + kc * cs, oyc = oy + kr * cs; cell(oxc, oyc, "rgba(11,110,120,0.85)", TEAL, 3);
+    var ocx = oxc + cs / 2, ocy = oyc + cs / 2, corners = [[kc, kr], [kc + 3, kr], [kc, kr + 3], [kc + 3, kr + 3]];
+    ctx.strokeStyle = "rgba(11,110,120,0.45)"; ctx.lineWidth = 2;
+    for (var i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(ix + corners[i][0] * cs, iy + corners[i][1] * cs); ctx.lineTo(ocx, ocy); ctx.stroke(); }
+    ctx.textAlign = "center"; ctx.fillStyle = MUTED; ctx.font = "bold 28px ui-monospace,Menlo,monospace";
+    ctx.fillText("入力 (7×7)", ix + n * cs / 2, iy - 24); ctx.fillText("出力 = 特徴マップ (5×5)", ox + m * cs / 2, iy - 24);
+    ctx.fillStyle = ORANGE; ctx.font = "26px ui-monospace,Menlo,monospace"; ctx.fillText("3×3 カーネル（9個の重み）を滑らせる", ix + n * cs / 2, iy + n * cs + 44);
+    ctx.fillStyle = TEAL; ctx.fillText("窓の9マス → 出力1マス（重みは全位置で共有）", ox + m * cs / 2, oy + m * cs + 44);
+  }
+
+  // multimodal/01: CLIP の類似度行列 — 対角＝正しいペア（近づける）、非対角＝負例（遠ざける）
+  function drawClipMatrix(c) {
+    var ctx = c.getContext("2d"), W = c.width, H = c.height; ctx.clearRect(0, 0, W, H);
+    var n = 5, cs = 130, x0 = 430, y0 = 170, seed = 3;
+    function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    for (var i = 0; i < n; i++) for (var j = 0; j < n; j++) {
+      var diag = i === j, sim = diag ? 0.85 + rnd() * 0.1 : 0.05 + rnd() * 0.18, x = x0 + j * cs, y = y0 + i * cs;
+      ctx.fillStyle = "rgba(11,110,120," + sim.toFixed(2) + ")"; ctx.fillRect(x, y, cs - 4, cs - 4);
+      ctx.strokeStyle = diag ? ORANGE : HAIR; ctx.lineWidth = diag ? 4 : 1; ctx.strokeRect(x, y, cs - 4, cs - 4);
+      ctx.fillStyle = sim > 0.5 ? "#fff" : MUTED; ctx.font = "22px ui-monospace,Menlo,monospace"; ctx.fillText(sim.toFixed(2), x + (cs - 4) / 2, y + (cs - 4) / 2);
+    }
+    ctx.fillStyle = INK; ctx.font = "bold 24px ui-monospace,Menlo,monospace";
+    for (var k = 0; k < n; k++) {
+      ctx.fillText("テキスト" + (k + 1), x0 + k * cs + (cs - 4) / 2, y0 - 34);
+      ctx.save(); ctx.translate(x0 - 46, y0 + k * cs + (cs - 4) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText("画像" + (k + 1), 0, 0); ctx.restore();
+    }
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic"; ctx.font = "25px ui-monospace,Menlo,monospace";
+    ctx.fillStyle = ORANGE; ctx.fillText("● 対角（画像 i × テキスト i）＝正しいペア → 類似度を上げる", x0, y0 + n * cs + 44);
+    ctx.fillStyle = MUTED; ctx.fillText("● 非対角＝バッチ内の他人ペア（負例）→ 類似度を下げる", x0, y0 + n * cs + 82);
+  }
+
+  // physical-ai/03: P / PI / PID のステップ応答（目標へどう収束するか）
+  function drawPidResponse(c) {
+    var ctx = c.getContext("2d"), W = c.width, H = c.height; ctx.clearRect(0, 0, W, H);
+    var ml = 90, mr = 360, mt = 70, mb = 90, pw = W - ml - mr, ph = H - mt - mb, E = Math.exp;
+    function X(t) { return ml + t * pw; } function Y(v) { return mt + ph - (v / 1.5) * ph; }
+    ctx.strokeStyle = HAIR; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ml, mt); ctx.lineTo(ml, mt + ph); ctx.lineTo(ml + pw, mt + ph); ctx.stroke();
+    ctx.strokeStyle = MUTED; ctx.setLineDash([10, 8]); ctx.beginPath(); ctx.moveTo(ml, Y(1)); ctx.lineTo(ml + pw, Y(1)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = MUTED; ctx.font = "24px ui-monospace,Menlo,monospace"; ctx.textAlign = "left"; ctx.fillText("目標値", ml + 14, Y(1) - 12);
+    function plot(f, col, w) { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); for (var s = 0; s <= 200; s++) { var t = s / 200, x = X(t), y = Y(f(t)); if (s === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); } ctx.stroke(); }
+    plot(function (t) { return 0.7 * (1 - E(-4.5 * t)); }, "rgba(90,101,115,0.9)", 3.5);
+    plot(function (t) { return 1 - E(-2.3 * t) * Math.cos(7.0 * t); }, ORANGE, 3.5);
+    plot(function (t) { return 1 - E(-4.2 * t) * (1 + 4.2 * t); }, TEAL, 4.5);
+    ctx.font = "bold 26px ui-monospace,Menlo,monospace"; ctx.textAlign = "left";
+    ctx.fillStyle = MUTED; ctx.fillText("P：定常偏差が残る", ml + pw + 12, mt + 70);
+    ctx.fillStyle = ORANGE; ctx.fillText("PI：行き過ぎ＋振動", ml + pw + 12, mt + 112);
+    ctx.fillStyle = TEAL; ctx.fillText("PID：なめらかに整定", ml + pw + 12, mt + 154);
+    ctx.fillStyle = MUTED; ctx.font = "24px ui-monospace,Menlo,monospace"; ctx.textAlign = "center"; ctx.fillText("時間 →", ml + pw / 2, mt + ph + 52);
+  }
+
+  // rl/02: 価値反復が「ゴールから価値を伝播」する（色＝状態価値・矢印＝貪欲方策）
+  function drawGridworldValue(c) {
+    var ctx = c.getContext("2d"), W = c.width, H = c.height; ctx.clearRect(0, 0, W, H);
+    var n = 5, cs = 150, x0 = (W - n * cs) / 2, y0 = 110, gr = 0, gc = 4;
+    function val(r, col) { return Math.pow(0.85, Math.abs(r - gr) + Math.abs(col - gc)); }
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    for (var r = 0; r < n; r++) for (var col = 0; col < n; col++) {
+      var v = val(r, col), x = x0 + col * cs, y = y0 + r * cs, cx = x + (cs - 3) / 2, cy = y + (cs - 3) / 2;
+      ctx.fillStyle = "rgba(11,110,120," + (0.12 + 0.8 * v).toFixed(2) + ")"; ctx.fillRect(x, y, cs - 3, cs - 3);
+      ctx.strokeStyle = HAIR; ctx.lineWidth = 1; ctx.strokeRect(x, y, cs - 3, cs - 3);
+      if (r === gr && col === gc) { ctx.fillStyle = "#fff"; ctx.font = "bold 40px ui-monospace,Menlo,monospace"; ctx.fillText("G", cx, cy); continue; }
+      ctx.fillStyle = v > 0.4 ? "#fff" : MUTED; ctx.font = "22px ui-monospace,Menlo,monospace"; ctx.fillText(v.toFixed(2), cx, cy + 36);
+      var best = null, bv = -1;
+      [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(function (d) { var nr = r + d[0], nc = col + d[1]; if (nr >= 0 && nr < n && nc >= 0 && nc < n) { var vv = val(nr, nc); if (vv > bv) { bv = vv; best = d; } } });
+      if (best) {
+        ctx.save(); ctx.translate(cx, cy - 16); ctx.rotate(Math.atan2(best[0], best[1]));
+        ctx.strokeStyle = ORANGE; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-24, 0); ctx.lineTo(16, 0); ctx.stroke();
+        ctx.fillStyle = ORANGE; ctx.beginPath(); ctx.moveTo(28, 0); ctx.lineTo(14, -9); ctx.lineTo(14, 9); ctx.closePath(); ctx.fill(); ctx.restore();
+      }
+    }
+    ctx.fillStyle = MUTED; ctx.textBaseline = "alphabetic"; ctx.textAlign = "center"; ctx.font = "bold 25px ui-monospace,Menlo,monospace";
+    ctx.fillText("色 = 状態価値 V(s)（ゴール G に近いほど高い）／オレンジ矢印 = 貪欲方策（価値の高い隣へ）", W / 2, y0 + n * cs + 50);
+  }
+
+  // llm/04: スケーリング則 — 計算量を増やすと損失がべき乗で下がる（log-log で直線）
+  function drawScalingLaw(c) {
+    var ctx = c.getContext("2d"), W = c.width, H = c.height; ctx.clearRect(0, 0, W, H);
+    var ml = 160, mr = 120, mt = 100, mb = 130, pw = W - ml - mr, ph = H - mt - mb;
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(ml, mt); ctx.lineTo(ml, mt + ph); ctx.lineTo(ml + pw, mt + ph); ctx.stroke();
+    var a = [ml + pw * 0.03, mt + ph * 0.08], b = [ml + pw * 0.97, mt + ph * 0.92];
+    ctx.strokeStyle = TEAL; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    ctx.fillStyle = ORANGE; for (var k = 0; k < 6; k++) { var t = k / 5, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t; ctx.beginPath(); ctx.arc(x, y, 11, 0, 7); ctx.fill(); }
+    ctx.textAlign = "left"; ctx.fillStyle = TEAL; ctx.font = "bold 32px ui-monospace,Menlo,monospace"; ctx.fillText("L ∝ C^(-α)", ml + pw * 0.46, mt + ph * 0.30);
+    ctx.fillStyle = MUTED; ctx.font = "24px ui-monospace,Menlo,monospace"; ctx.fillText("（log-log では直線）", ml + pw * 0.46, mt + ph * 0.30 + 38);
+    ctx.fillStyle = INK; ctx.font = "bold 27px ui-monospace,Menlo,monospace"; ctx.textAlign = "center"; ctx.fillText("計算量 C（log）→", ml + pw / 2, mt + ph + 62);
+    ctx.save(); ctx.translate(ml - 76, mt + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText("損失 L（log）→", 0, 0); ctx.restore();
+    ctx.fillStyle = MUTED; ctx.textAlign = "left"; ctx.font = "24px ui-monospace,Menlo,monospace"; ctx.fillText("計算・データ・パラメータを増やすほど損失が下がる（予測可能なべき乗則）", ml, mt + ph + 108);
   }
 })();

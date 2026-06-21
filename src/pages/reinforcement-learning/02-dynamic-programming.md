@@ -52,6 +52,11 @@ DP は2つの操作の組み合わせで成り立ちます。**評価 (evaluatio
 
 この2つを交互に回すと、方策はどんどん良くなり、最後に**最適方策 $\pi^*$ と最適価値 $V^*$** に行き着きます。これが本章の背骨です。
 
+<figure>
+  <canvas id="gridworld-value" width="1600" height="960" aria-hidden="true"></canvas>
+  <figcaption class="fig-cap"><span>DP が計算する最終結果のイメージ：状態価値はゴール G から遠いほど低く（色が薄く）、各マスの貪欲方策（オレンジ矢印）は価値の高い隣＝ゴール方向を指す</span><span>色 = V(s)、矢印 = greedy(V)</span></figcaption>
+</figure>
+
 ```mermaid
 flowchart TD
   subgraph DP["動的計画法（モデル既知）"]

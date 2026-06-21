@@ -154,6 +154,11 @@ L(D) \approx \left(\frac{D_c}{D}\right)^{\alpha_D}, \qquad
 L(C) \approx \left(\frac{C_c}{C}\right)^{\alpha_C}
 $$
 
+<figure>
+  <canvas id="scaling-law" width="1600" height="640" aria-hidden="true"></canvas>
+  <figcaption class="fig-cap"><span>べき乗則 L ∝ C^(−α) は、両対数（log-log）軸では直線になる。計算・データ・規模を増やすほど損失が予測どおり下がる</span><span>両軸とも log</span></figcaption>
+</figure>
+
 各記号を定義します（ここが躓きやすい）。
 
 - $N, D, C$：それぞれモデルサイズ・データ量・計算量。**横軸に置く「規模」**。

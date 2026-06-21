@@ -158,6 +158,11 @@ $$
 S_{ij} = \langle z^I_i, z^T_j \rangle
 $$
 
+<figure>
+  <canvas id="clip-matrix" width="1600" height="940" aria-hidden="true"></canvas>
+  <figcaption class="fig-cap"><span>バッチ B 個の「画像 × テキスト」類似度行列。対角（正しいペア＝正例）を上げ、非対角（他人ペア＝負例）を下げる——これが対照学習</span><span>濃いほど類似度が高い</span></figcaption>
+</figure>
+
 この行列の見方を**全部**定義します。
 
 - **行 $i$** ＝ 画像 $i$ を固定し、$B$ 個すべての文との類似度を並べたもの。

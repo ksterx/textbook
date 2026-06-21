@@ -109,6 +109,11 @@ flowchart TB
 
 畳み込み層の心臓は **フィルタ（カーネル, kernel）** $\mathbf{K} \in \mathbb{R}^{k_h\times k_w}$ です（多チャネルは後述）。$k_h\times k_w$ は典型的に $3\times3$ や $5\times5$ という**小さな窓**です。このフィルタを画像の上で滑らせ、各位置で「窓の中身とフィルタの要素積の総和」を取ります。これが出力の特徴マップ $\mathbf{Y}$ になります。
 
+<figure>
+  <canvas id="conv-slide" width="1600" height="760" aria-hidden="true"></canvas>
+  <figcaption class="fig-cap"><span>3×3 カーネルを入力で滑らせ、各位置で「窓の9マス → 出力の1マス」を作る。同じ重みを全位置で使い回す（重み共有）のが畳み込みの肝</span><span>入力 7×7 → 出力 5×5</span></figcaption>
+</figure>
+
 この「滑らせて要素積の総和を取る」動作を、誰が・いつ・何を入力に・何を出力するかという順で1枚にします。同じフィルタ $K$ が窓の位置を変えながら何度も使われ、各位置で1つのスカラー（応答）を出力に書き込んでいく、というループです。
 
 ```mermaid
