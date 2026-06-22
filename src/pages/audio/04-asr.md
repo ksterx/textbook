@@ -78,6 +78,66 @@ $$P(y\mid x)=\sum_{a\in B^{-1}(y)}\ \prod_{t=1}^{T} p_t(a_t\mid x)$$
 CTC = 「encoder の各位置で語彙+blank を分類するだけ」。デコーダ（=内部 LM）が無いので軽くて速い。LLM でいう「言語モデル無しのトークン分類器」。blank は長さ調整用の特殊トークンです。
 :::
 
+### forward-backward を 1 ステップ歩く（例：CAT）
+
+「効率的に計算」の中身を具体的に開きます。$B^{-1}(y)$ の経路数は $T$ について**指数的に増える**（後述）のに、なぜ多項式時間で和が取れるのか。鍵は **前向き変数 $\alpha_t(s)$ という部分和を、隣のセルから使い回す**ことです。
+
+まずターゲット `CAT` を、CTC の作法で **文字の間と両端に blank `_` を挿入**した拡張ラベル列にします。
+
+$$
+\ell = [\,\_,\ \mathrm{C},\ \_,\ \mathrm{A},\ \_,\ \mathrm{T},\ \_\,]
+\qquad(s = 0,1,2,3,4,5,6,\ \text{長さ } 2|y|+1 = 7)
+$$
+
+ここで $s$ は**拡張ラベル上の位置**（縦軸）、$t$ は**入力フレーム**（横軸・$t=0\dots T-1$）です。各セル $(t,s)$ を「フレーム $t$ までで、拡張ラベルの位置 $s$ まで消化した全経路の確率の和」= $\alpha_t(s)$ とします。下は $T=6$ フレームの trellis で、**緑のセルが 1 本のアライメント** `_ C _ A _ T`（= 畳むと `CAT`）の通り道です。RNN-T の格子（横 = 時間 $t$・縦 = 出力）と同じ読み方で、CTC では縦が「blank を挟んだ拡張ラベル位置 $s$」になります。
+
+<div class="tb-tgrid" style="grid-template-columns: 2.8rem repeat(6, minmax(2.2rem, 1fr));">
+<span class="head"></span><span class="head">t0</span><span class="head">t1</span><span class="head">t2</span><span class="head">t3</span><span class="head">t4</span><span class="head">t5</span>
+<span class="head">_ (s0)</span><span class="sem">_</span><span>_</span><span>_</span><span>_</span><span>_</span><span>_</span>
+<span class="head">C (s1)</span><span>C</span><span class="sem">C</span><span>C</span><span>C</span><span>C</span><span>C</span>
+<span class="head">_ (s2)</span><span>_</span><span>_</span><span class="sem">_</span><span>_</span><span>_</span><span>_</span>
+<span class="head">A (s3)</span><span>A</span><span>A</span><span>A</span><span class="sem">A</span><span>A</span><span>A</span>
+<span class="head">_ (s4)</span><span>_</span><span>_</span><span>_</span><span>_</span><span class="sem">_</span><span>_</span>
+<span class="head">T (s5)</span><span>T</span><span>T</span><span>T</span><span>T</span><span>T</span><span class="sem">T</span>
+<span class="head">_ (s6)</span><span>_</span><span>_</span><span>_</span><span>_</span><span>_</span><span>_</span>
+</div>
+
+*横 = フレーム $t$ / 縦 = 拡張ラベル位置 $s$（blank `_` を文字間と両端に挿入）。ティールのセルが 1 本のアライメント `_C_A_T`（畳むと `CAT`）。各セルの値が前向き変数 $\alpha_t(s)$。終点は最後の文字 `T (s5)` か末尾 blank `_ (s6)` のどちらか。*
+
+緑の経路を歩くと、$t$ が 1 進むごとに「同じ位置に留まる（横移動 = blank か同じ文字の引き伸ばし）」か「次の位置へ下りる（縦移動 = 次のラベルを出す）」を選びます。`_(s0) → C(s1) → _(s2) → A(s3) → _(s4) → T(s5)` と各フレームでちょうど 1 つ下りた例です。
+
+#### 前向き漸化式：部分和を隣から使い回す
+
+セル $(t,s)$ へ来る直前にいられた位置は**たかだか 3 つ**です——同じ位置 $s$（留まる）、1 つ上 $s-1$（前のラベルから下りる）、2 つ上 $s-2$（前の文字から blank を飛ばして下りる）。そこで前向き変数は次の漸化式で**隣のセルの部分和を足すだけ**で求まります。
+
+$$
+\alpha_t(s) = \bigl(\alpha_{t-1}(s) + \alpha_{t-1}(s-1) + [\,\alpha_{t-1}(s-2)\,]\bigr)\, y_t(\ell_s)
+$$
+
+記号の意味を全部定義します。
+
+- $\alpha_t(s)$ = フレーム $t$ までで拡張ラベル位置 $s$ に到達する**全経路の確率の和**（部分和）。これが「使い回す値」。
+- $y_t(\ell_s)$ = フレーム $t$ で、位置 $s$ のラベル $\ell_s$（文字 or blank）を出す確率。encoder の softmax 出力の 1 成分です。**$t$ ごとに変わる観測**（trellis の縦 1 列ぶんの分布）。
+- $\alpha_{t-1}(s)$ = 同じ位置に**留まった**（横移動）経路ぶん。
+- $\alpha_{t-1}(s-1)$ = 1 つ上から**下りてきた**経路ぶん。
+- $[\,\alpha_{t-1}(s-2)\,]$ = **角括弧は条件付き**。**$\ell_s$ が文字 かつ $\ell_{s-2}\neq\ell_s$ のときだけ**足します（2 つ上の文字から blank を 1 個スキップして下りる）。$\ell_s$ が blank のとき、または直前と同じ文字が連続する（`LL` のような）ときは、**blank を飛ばすと畳んだとき文字が消えてしまう**ので、この項は**禁止**です。
+
+読み方：右辺の括弧が「この位置 $s$ に来られた経路の部分和（最大 3 通りの入口を合算）」、それに「今フレームでこのラベルを出す確率 $y_t(\ell_s)$」を掛ける。**$2^T$ 通りに展開せず、隣のセルの和を 1 回足すだけ**で、その位置に至る全経路ぶんが入っているのがポイントです。
+
+最後に、テキスト `CAT` の総確率は終点 2 セルの和です。
+
+$$
+P(y\mid x) = \alpha_{T-1}\!\bigl(|\ell|-1\bigr) + \alpha_{T-1}\!\bigl(|\ell|-2\bigr)
+$$
+
+（末尾 blank `_ (s6)` で終わる経路と、最後の文字 `T (s5)` で終わる経路の両方を足す）。
+
+:::note[なぜ「効率的」と言えるのか——$2^T$ を部分和で畳む]
+$T$ フレーム各々で「進む / 留まる」を選ぶと、アライメント経路は素朴には $O(2^T)$ オーダーで爆発します（$T=6$ でも数十通り、実際の $T=$ 数百では天文学的）。それを 1 本ずつ確率計算して足したら永遠に終わりません。
+
+forward-backward DP は、**同じ位置 $(t,s)$ を通る経路たちの確率を $\alpha_t(s)$ という 1 個の部分和にまとめ、次のフレームではそれを隣のセルへ使い回す**ことで、和を**指数 → $O(T\cdot|\ell|)$ の多項式**に畳みます。LLM の自己回帰でいう「過去の計算を KV cache で使い回す」のと同じ精神——**部分結果の再利用**です。HMM の forward algorithm（章のアナロジー元）とも同型で、blank の遷移規則ぶんだけ遷移が CTC 用に制限されています。
+:::
+
 ## RNN-T / Transducer：出力依存を入れた streaming の本命
 
 **RNN-T (RNN Transducer)** は CTC の弱点（出力が互いに独立）を埋めます。CTC が encoder だけだったのに対し、**「音響」担当と「言語」担当を別ネットワークで持ち、毎ステップ合流させる**のが要点です。部品は3つあります。

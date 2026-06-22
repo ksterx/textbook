@@ -129,6 +129,33 @@ RVQ は残差を積む構造（章03）でした。段 $j$ が補正するのは
 
 VALL-E では AR と NAR は**別々の Transformer**として実装されます（重み共有しない流儀が標準）。NAR は段インデックス $j$ を埋め込みなどで条件に受け取り、「いまどの段を埋めているか」を知ります。
 
+#### NAR 推論を 1 ステップ歩く（$T=3,\ N_q=3$）
+
+「段ごとに並列」を具体的な数で 1 ステップ追います。AR がすでに段 0 を出し終え、
+
+$$
+c^{(0)} = [\,5,\ 2,\ 7\,]
+$$
+
+（時刻 $t=0,1,2$ の codebook 0 トークンが順に 5, 2, 7）に確定したとします。残るは段 1 と段 2 です。NAR の動作は次の通り。
+
+1. **段 1 を埋める（1 回目のフォワード）。** NAR に「テキスト $x$ ＋ 音響プロンプト $a$ ＋ 確定済みの段 0 全体 $c^{(0)}=[5,2,7]$ ＋ 段インデックス $j=1$」を渡します。NAR は **3 時刻ぶんのロジットを 1 回のフォワードで同時に**出し、各時刻を独立に argmax（or サンプル）して段 1 の全時刻を**一括確定**します。たとえば
+   $$
+   c^{(1)} = [\,11,\ 4,\ 19\,]
+   $$
+   時刻 $t=0$ の `11`・$t=1$ の `4`・$t=2$ の `19` は、**互いを条件に取らず**（段内は条件付き独立）、共通の条件 $(x,a,c^{(0)},j{=}1)$ だけから同時に出ます。これが「段内は時間並列」の正体です。
+
+2. **段 2 を埋める（2 回目のフォワード）。** 今度は条件に **段 0 と段 1 の両方**（$c^{(<2)}=[c^{(0)},c^{(1)}]$）と段インデックス $j=2$ を渡します。また 3 時刻ぶんを 1 回で出し、一括確定します。
+   $$
+   c^{(2)} = [\,3,\ 28,\ 9\,]
+   $$
+
+これで $T\times N_q = 3\times3 = 9$ トークンが全部埋まりました。NAR が回したフォワードは段数ぶんの **$N_q-1 = 2$ 回だけ**（AR の段 0 は 3 回逐次）。各回で 3 トークンを並列に出すので、時間方向には一切ループしていません。
+
+:::warning[何を条件に「一括」できるのか]
+段 1 を一括に出せたのは、**段 0 が全時刻すでに確定している**からです。NAR は「段 0 が敷いた骨格 $[5,2,7]$ の上に、各時刻の細部を独立に重ねる」ので、時刻どうしの相談が要りません。逆に**段 2 は段 1 の確定を待ってから**でないと出せません（段方向の依存）。だから「段 1 と段 2 を同時に一括」はできず、**段の間だけは逐次・段の中だけ並列**——この非対称が NAR の設計そのものです。
+:::
+
 ### ゼロショット話者クローンの正体
 
 3 秒音響プロンプト $a$ は、**AR と NAR の両方で「プロンプト（接頭辞）」として条件に入ります**。LLM が few-shot 例を文脈先頭に置くのと同じく、音響プロンプトを系列の先頭に置くだけ。モデルは「この声色・この収録環境に続く自然な音声」を補完しようとし、結果として**プロンプトの話者性が合成区間にコピー**されます。
@@ -224,6 +251,45 @@ VALL-E の AR+NAR は「2 次元 ($T \times N_q$) をどう生成順に流すか
 
 共通の狙いは「**flatten の $N_q$ 倍長を避けつつ、段間の依存をどこかで残す**」こと。違いは「どこを AR にし、どこを並列にするか」の配分です。
 :::
+
+### 生成順を絵で見る（$T=3,\ N_q=3$ の同じ表を 3 通りに埋める）
+
+言葉だけだと「どの軸を並列にしたか」がぼやけます。**同じ $T\times N_q$ のトークン表**（横 = 時刻 $t$、縦 = 段 $q$）を、3 つの並べ方が**どの順番で**埋めるかを並べて見ます。各セルの数字は **生成（確定）される順番**、色は **AR で逐次に出すもの（オレンジ）** と **NAR で並列に出すもの（ティール）**、`PAD` は delay で生じる **無駄フレーム（その時刻にはまだ出すべき中身が無い穴）** です。
+
+**① flatten**：全 9 トークンを 1 本の AR で 1 個ずつ。系列長 $T\times N_q=9$。すべてオレンジ（全部逐次）。ここでは「時刻 → 段」の順（t0 の全段 → t1 の全段 → …）で番号を振ります。
+
+<div class="tb-tgrid" style="grid-template-columns: 2.4rem repeat(3, minmax(2.6rem, 1fr));">
+<span class="head"></span><span class="head">t0</span><span class="head">t1</span><span class="head">t2</span>
+<span class="head">q0</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">1</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">4</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">7</span>
+<span class="head">q1</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">2</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">5</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">8</span>
+<span class="head">q2</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">3</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">6</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">9</span>
+</div>
+
+*オレンジ = AR（逐次）。9 ステップすべて 1 本の自己回帰。番号 = 生成順。*
+
+**② delay pattern**：段 $q$ を **$q$ フレーム右にずらす**。生成ステップ $s$ では「縦 1 列ぶん（時刻のずれた全段）を 1 トークンずつ並列ヘッドで」出します。段 $q$ の時刻 $t$ は**ステップ $s=t+q$** で確定。だから各ステップ内では「下位段はすでに過去ステップで確定済み」になるよう整流されます。左下と右上に `PAD`（その時刻×段にはまだ/もう中身が無い穴）が階段状に空きます。番号 = ステップ $s$。
+
+<div class="tb-tgrid" style="grid-template-columns: 2.4rem repeat(5, minmax(2.6rem, 1fr));">
+<span class="head"></span><span class="head">s0</span><span class="head">s1</span><span class="head">s2</span><span class="head">s3</span><span class="head">s4</span>
+<span class="head">q0</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">0</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">1</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">2</span><span style="color:var(--hair)">PAD</span><span style="color:var(--hair)">PAD</span>
+<span class="head">q1</span><span style="color:var(--hair)">PAD</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">1</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">2</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">3</span><span style="color:var(--hair)">PAD</span>
+<span class="head">q2</span><span style="color:var(--hair)">PAD</span><span style="color:var(--hair)">PAD</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">2</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">3</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">4</span>
+</div>
+
+*横軸は**生成ステップ $s$**（時刻 $t$ ではない）。各列（同一 $s$）の数字が同じ = その 1 ステップで全段を**並列ヘッド**で同時に出す。段が下がるほど右へ 1 つずれ、対角線状に流れる。実効系列長は $T+(N_q-1)=5$（$\approx T$）。*
+
+**③ VALL-E の AR+NAR**：段 0 だけ **AR で時間方向に逐次**（オレンジ 1→2→3）。段 0 が全時刻確定したら、段 1 を **NAR で全時刻一括**（ティール、同じステップ番号 `N1`）、続けて段 2 を一括（`N2`）。AR の系列長は $T=3$、NAR は段数ぶん $N_q-1=2$ 回フォワードするだけ。
+
+<div class="tb-tgrid" style="grid-template-columns: 2.4rem repeat(3, minmax(2.6rem, 1fr));">
+<span class="head"></span><span class="head">t0</span><span class="head">t1</span><span class="head">t2</span>
+<span class="head">q0</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">1</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">2</span><span style="background:rgba(221,106,43,0.15);border-color:var(--accent-2);color:var(--accent-2);font-weight:700">3</span>
+<span class="head">q1</span><span class="sem">N1</span><span class="sem">N1</span><span class="sem">N1</span>
+<span class="head">q2</span><span class="sem">N2</span><span class="sem">N2</span><span class="sem">N2</span>
+</div>
+
+*オレンジ = AR（段 0 を時間方向に逐次、$T=3$ ステップ）。ティール = NAR（段ごとに全時刻を**並列**、`N1`→`N2` の 2 回だけ）。同じ `N1` が横一列＝段 1 の全時刻を 1 フォワードで一括に出す、の意味。*
+
+3 枚を見比べると違いが一目で出ます。**flatten は全マスに別々の番号**（逐次 9 ステップ）、**delay は対角線にずれて PAD の穴が階段状**（並列ヘッドだが系列は実質 $T$）、**VALL-E は段 0 だけ番号が時間方向に走り、上位段は横一列が同じ番号**（段内は完全並列）。「どこを AR の逐次にし、どこを並列に畳むか」の配分の違いが、そのまま埋め方の絵に出ています。
 
 :::warning[delay と NAR を混同しない]
 delay pattern は**全段が 1 つの AR の中で**時間をずらして生成されます（段方向もある意味 AR）。VALL-E の NAR は**段方向を別モデルで一括**に出します。「並列っぽい」点は似ていますが、delay は時間 AR の中で段をずらすだけ、NAR は段ごとに全時刻を独立出力する別モデル —— 並列化している軸が違います（delay = 段を時間にずらして 1 本に畳む / NAR = 段内の時間を並列に畳む）。

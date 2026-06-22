@@ -347,11 +347,49 @@ stateDiagram-v2
 | Distributional RL (C51) | リターンの **期待値でなく分布** を学習 |
 | Noisy Net | パラメータ空間ノイズによる探索（$\varepsilon$-greedy 代替） |
 
-これらは本章の範囲を超えますが、「DQN は出発点で、改良の方向が多数ある」ことだけ掴んでおけば十分です。
+これらは本章の範囲を超えますが、「DQN は出発点で、改良の方向が多数ある」ことだけ掴んでおけば十分です。1 つだけ、表の先頭にある **Double DQN** の中身を見ておきます。これは TD3（章08）の双子 Q にも直結する、深層 RL を貫く話だからです。
+
+#### Double DQN：$\max$ が過大評価に偏るのを正す
+
+DQN のターゲット $y=r+\gamma\max_{a'}\hat{Q}(s',a';\mathbf{w}^-)$ は、**同じネットワーク $\mathbf{w}^-$ で「どの行動が最良か（行動選択）」と「その行動の価値はいくつか（価値評価）」を兼ねて**います。ここに統計的な罠があります。$\hat{Q}$ には推定ノイズ（誤差）が乗っていて、$\max$ は **たまたまノイズで上振れした行動を選びやすい**。同じ網で選んで同じ網で評価すると、その上振れがそのまま価値として採用され、ターゲットが**系統的に高め**に出ます。これを毎ステップ繰り返すと過大評価が蓄積し、学習が崩れます。
+
+**Double DQN** はこれを「選ぶ網」と「評価する網」を分けて断ち切ります。行動の選択は学習中の網 $\mathbf{w}$ で、その行動の価値の評価はターゲット網 $\mathbf{w}^-$ で行います。
+
+$$
+y = r + \gamma\,\hat{Q}\big(s',\ \arg\max_{a'}\hat{Q}(s',a';\mathbf{w});\ \mathbf{w}^-\big)
+$$
+
+$\mathbf{w}$ が上振れと判断した行動でも、独立な $\mathbf{w}^-$ で評価し直すと上振れが乗りにくく、過大評価が打ち消されます。
+
+:::warning[過大評価は「実装ミス」ではなく $\max$ が生む統計的バイアス]
+「Q が高すぎるのはコードのバグでは？」と疑いがちですが、これは**正しく実装しても起きる統計的バイアス**です。原因は $\max$ という演算そのもの —— ノイズを含む複数の推定値から最大を取ると、その最大値の**期待値は真の最大値より上**になります（$\mathbb{E}[\max_i \hat{Q}_i] \ge \max_i \mathbb{E}[\hat{Q}_i]$、Jensen の不等式の向き）。行動数が多いほど・推定が荒いほど偏りは大きくなります。「選択と評価を同じ網で兼ねる」と、選んだ時点の上振れがそのまま評価に持ち込まれて偏りが顕在化する —— だから両者を別の網に分けて断つのが Double DQN です。同じ発想の「2 つの Q の小さい方を取る」clipped double-Q が章08 の TD3・SAC に受け継がれます。
+:::
 
 ## 実装
 
 線形関数近似 Q 学習（半勾配 TD）を numpy だけで実装します。$5\times5$ の gridworld を、**表（$25\times4=100$ エントリ）ではなく $16$ 個のパラメータ** で解き、方策が最適経路へ改善することを実測します。特徴は「行・列・ゴールまでの距離・バイアス」の4次元を行動ごとに並べたものです。
+
+#### 特徴ベクトル $\boldsymbol\phi(s,a)$ の 16 次元ブロック構造
+
+この実装の $\boldsymbol\phi(s,a)$ は **16 次元**で、4 つの行動それぞれに 4 次元の「ブロック」を割り当てます。**ある行動 $a$ で `phi(s,a)` を作ると、第 $a$ ブロックだけに状態特徴 $[\text{行},\ \text{列},\ \text{距離},\ \text{バイアス}]$ が入り、他の 3 ブロックはすべて 0** になります（コードの `v[a*4:(a+1)*4] = state_feat(s)` がこれ）。下は $a=2$（左）を選んだときの $\boldsymbol\phi(s,2)$ の中身です。
+
+<div class="tb-tgrid" style="grid-template-columns: 4.2rem repeat(4, minmax(2.2rem, 1fr));">
+<span class="head"></span><span class="head">行</span><span class="head">列</span><span class="head">距離</span><span class="head">バイアス</span>
+<span class="head">行動0:上</span><span>0</span><span>0</span><span>0</span><span>0</span>
+<span class="head">行動1:下</span><span>0</span><span>0</span><span>0</span><span>0</span>
+<span class="head">行動2:左</span><span class="sem">r/4</span><span class="sem">c/4</span><span class="sem">dist</span><span class="sem">1</span>
+<span class="head">行動3:右</span><span>0</span><span>0</span><span>0</span><span>0</span>
+</div>
+
+*$a=2$ の行（teal）だけに状態特徴が乗り、他の行動ブロックは 0。各行が 4 次元 × 4 行動 = 16 次元。*
+
+なぜこう作るのか —— **行動ごとにブロックを分けると、1 本の重みベクトル $\mathbf{w}\in\mathbb{R}^{16}$ で「行動ごとに別の Q 関数」を表せる**からです。$a=2$ のとき $\boldsymbol\phi(s,2)$ は第 2 ブロックしか非ゼロでないので、内積 $\mathbf{w}^\top\boldsymbol\phi(s,2)$ は **$\mathbf{w}$ の第 2 ブロック（$w_8,\dots,w_{11}$）と状態特徴の内積だけ**を拾い、他のブロックの重みは一切混じりません。これは「行動 one-hot（4 次元）と状態特徴（4 次元）の外積を平らに並べた」形で、行動 $a$ が「どのブロックの重みを使うか」を選ぶスイッチとして働きます。
+
+shape を明示します。**$\boldsymbol\phi(s,a)$ も $\mathbf{w}$ も同じ $(16,)$ の 1 次元ベクトル**で、内積 $\mathbf{w}^\top\boldsymbol\phi(s,a)=\sum_{i=1}^{16}w_i\phi_i(s,a)$ は **スカラ**（その $(s,a)$ の Q 値 1 個）です。行動を変えると非ゼロになるブロックが変わり、同じ $\mathbf{w}$ から 4 つの異なる Q 値が読み出せます。
+
+:::warning[$\boldsymbol\phi$ は $(16,)$、$\mathbf{w}$ も $(16,)$、内積は 1 スカラ]
+「行動 4 × 特徴 4 だから $4\times 4$ の行列では？」と思いがちですが、実装は**平らな 16 次元ベクトル**です。$\boldsymbol\phi(s,a)\in\mathbb{R}^{16}$（16 個中 4 個だけ非ゼロ）と $\mathbf{w}\in\mathbb{R}^{16}$ の内積で **1 個のスカラ Q 値**が出ます。4 つの行動の Q を一度に欲しいときは、4 回 `phi(s,a)` を作って 4 回内積を取ります（コードの `greedy` がこれ）。$\boldsymbol\phi$ と $\mathbf{w}$ の次元は常に一致 —— ここがズレると内積が定義できません。
+:::
 
 ```python title="linear_fa_q.py"
 import numpy as np

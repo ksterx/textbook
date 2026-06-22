@@ -105,6 +105,7 @@ flowchart LR
 - $t \in \{1,\dots,T\}$：拡散の時刻（ノイズの強さ）。$t$ が大きいほどノイズが多い。
 - $\epsilon \sim \mathcal{N}(0, I)$：前方拡散で足した**真のノイズ**。$x_t$ と同じ形のテンソル。学習の**教師信号**。
 - $\epsilon_\theta$：パラメータ $\theta$ を持つ**ノイズ予測ネットワーク**。$x_t$ と $t$ を見て、足されたノイズ $\epsilon$ を当てる。
+- $\bar\alpha_t$：ノイズスケジュールの**累積積**。$\alpha_t = 1-\beta_t$（$\beta_t$＝時刻 $t$ で足すノイズの分散）とおき、$\bar\alpha_t = \prod_{s\le t}\alpha_s$ と定義する。$t{=}0$ で $\bar\alpha_0 \approx 1$、$t{=}T$ で $\bar\alpha_T \approx 0$。後の前方拡散 $x_t = \sqrt{\bar\alpha_t}\,x_0 + \sqrt{1-\bar\alpha_t}\,\epsilon$ で、$t$ が進むほど **$x_0$ の重み $\sqrt{\bar\alpha_t}$ が消えてノイズ $\epsilon$ の重み $\sqrt{1-\bar\alpha_t}$ が支配的になる**——これが「$t{=}T$ で純ノイズ」の正体です。
 
 無条件拡散の学習目的は「足したノイズを当てる」回帰でした。
 
@@ -427,19 +428,28 @@ for step in range(4000):
 
 print("loss: step0 =", round(losses[0], 4), " 末尾平均 =", round(float(np.mean(losses[-100:])), 4))
 
-# サンプリング: 条件 c で生成先が変わるか(DDPM 逆過程)
-def sample(c_val, n=500, seed=1):
-    r = np.random.default_rng(seed); x = r.normal(size=(n, 2)); c = np.full(n, c_val)
+# サンプリング: classifier-free guidance つき DDPM 逆過程
+# 各ステップで条件あり/なしの両方を予測し、その差を w 倍に外挿する。
+# w=1 なら素の条件付き(差そのまま)、w>1 で条件の効きを強調。
+def sample(c_val, w=1.0, n=500, seed=1):
+    r = np.random.default_rng(seed); x = r.normal(size=(n, 2))
+    c = np.full(n, c_val); uncond = np.full(n, -1)        # -1 = 無条件 ∅
     for t in reversed(range(T)):
-        _, _, eps_hat = forward(x, np.full(n, t), c)
+        tt = np.full(n, t)
+        _, _, eps_c = forward(x, tt, c)                   # 条件あり ε_θ(x_t,t,c)
+        _, _, eps_u = forward(x, tt, uncond)              # 条件なし ε_θ(x_t,t,∅)
+        eps_hat = eps_u + w * (eps_c - eps_u)             # CFG 外挿
         a = alphas[t]; ab = abar[t]
         mean = (x - (1 - a) / np.sqrt(1 - ab) * eps_hat) / np.sqrt(a)
         x = mean + (np.sqrt(betas[t]) * r.normal(size=(n, 2)) if t > 0 else 0)
     return x
 
-s0 = sample(0); s1 = sample(1)
-print("条件0 のサンプル平均 =", np.round(s0.mean(0), 2), "(真の中心 [-2,-2])")
-print("条件1 のサンプル平均 =", np.round(s1.mean(0), 2), "(真の中心 [ 2, 2])")
+# w=1(素の条件付き) と w=5(条件強調) を比べる
+for w in (1.0, 5.0):
+    s0 = sample(0, w=w); s1 = sample(1, w=w)
+    spread = 0.5 * (s0.std(0).mean() + s1.std(0).mean())   # 生成の広がり(標準偏差)
+    print(f"w={w}: 条件0 平均={np.round(s0.mean(0),2)} 条件1 平均={np.round(s1.mean(0),2)} "
+          f"広がり(std)={spread:.3f}")
 ```
 
 実行結果（`uv run --with numpy python` で実測）:
@@ -450,14 +460,15 @@ print("条件1 のサンプル平均 =", np.round(s1.mean(0), 2), "(真の中心
 
 # toy_conditional_diffusion.py
 loss: step0 = 5.3319  末尾平均 = 1.0083
-条件0 のサンプル平均 = [-1.69 -1.76] (真の中心 [-2,-2])
-条件1 のサンプル平均 = [1.5  1.63] (真の中心 [ 2, 2])
+w=1.0: 条件0 平均=[-1.69 -1.76] 条件1 平均=[1.5  1.63] 広がり(std)=0.765
+w=5.0: 条件0 平均=[-1.79 -1.95] 条件1 平均=[1.71 2.12] 広がり(std)=0.525
 ```
 
 読み取れること:
 
 - **損失が下がる**（5.33 → 約1.0）：ネットワークが「$c$ ごとのノイズ」を当てられるようになった。
 - **条件で生成先が分離**：条件0 を与えると左下 $[-2,-2]$ 付近、条件1 を与えると右上 $[2,2]$ 付近に生成される。**同じノイズ初期値・同じネットワークでも、条件 $c$ だけで出力先が変わる**——これが text→image の核です。クラスラベルをテキスト埋め込みに、2D 点を画像に置き換えれば、Stable Diffusion の骨格そのものです。
+- **CFG で「効きが強まる」**：$w$ を $1\to 5$ に上げると、生成の**広がり（std）が 0.765 → 0.525 に縮み**、各クラスの平均が真の中心（$[\pm2,\pm2]$）へ寄ります。無条件予測からの差を $w$ 倍に外挿することで、サンプルが条件の中心へより強く引き寄せられる——**忠実度↑・多様性↓**という CFG の効果が、トイでもそのまま観測できます（理論節の $w$ 一覧表どおり）。
 - 末尾損失が 0 にならないのは、$x_t$ にノイズが乗っている以上ノイズを完璧には当てられない（理論的下限がある）ためで、異常ではありません。
 
 :::tip[深層が必須の箇所は概念スケルトンで]
@@ -526,7 +537,7 @@ CFG で推論時に $\hat\epsilon = \epsilon_\theta(x_t,t,\varnothing) + w[\epsi
 
 1. 上の `toy_conditional_diffusion.py` を写経し、`uv run --with numpy python` で動かす。**損失が下がる**ことと**条件0/1 で生成先が左下/右上に分かれる**ことを自分の目で確認する。
 2. クラスを2→4 に増やし（中心を4隅に配置）、条件埋め込み `Wc` を `(4, C_DIM)` に拡張する。**4 クラスすべてが正しい隅に生成される**かを測る。
-3. サンプリングに classifier-free guidance を実装する：`sample` 内で条件あり/なしの両方を `forward` し、$\hat\epsilon=\epsilon_\varnothing + w(\epsilon_c-\epsilon_\varnothing)$ で合成する。$w$ を $1,3,7$ と変え、**生成のばらつき（分散）が $w$ とともに縮む**ことを実測する。
+3. 上の `sample` には既に classifier-free guidance（$\hat\epsilon=\epsilon_\varnothing + w(\epsilon_c-\epsilon_\varnothing)$）が入っている。`w` を $0, 1, 3, 7, 15$ と振り、**$w=0$ で無条件**（条件0/1 の平均がほぼ一致＝条件が効かない）、**$w$ を上げると平均が真の中心へ寄り広がりが縮む**（忠実度↑・多様性↓）、**$w$ が過大だと逆に平均が中心を行き過ぎ広がりも増える**（過飽和の縮図）ことを実測する。理論節の $w$ 一覧表が、トイの数字でそのままなぞれることを確かめる。
 
 ここまでで text→image の最小核が手に入ります。次章 04（any-to-any / omni）で、理解と生成を1モデルに統合する設計へ進みます。
 
