@@ -21,6 +21,7 @@
     "nemotron-throughput": drawNemotronThroughput,
     "conformer-block": drawConformerBlock,
     "qwen3-offline-streaming": drawQwen3OfflineStreaming,
+    "frame-window-chunk": drawFrameWindowChunk,
   };
 
   function redraw() {
@@ -629,5 +630,45 @@
     ctx.fillStyle = "rgba(221,106,43,0.85)"; ctx.fillRect(ml + 210, 46, 26, 26); ctx.fillStyle = INK; ctx.fillText("streaming（2秒チャンク）", ml + 246, 66);
     ctx.fillStyle = MUTED; ctx.textAlign = "center"; ctx.font = "24px ui-monospace,Menlo,monospace";
     ctx.fillText("WER %（低いほど良い・3ベンチ平均, Table 8）", W / 2, H - 22);
+  }
+
+  // audio/04: サンプル → 窓 → フレーム → チャンク の入れ子。窓は重なるが 1 窓 = 1 フレーム、チャンクは N フレームの塊。
+  function drawFrameWindowChunk(c) {
+    var ctx = c.getContext("2d"), W = c.width, H = c.height; ctx.clearRect(0, 0, W, H);
+    var ml = 95, mr = 95, pw = W - ml - mr, N = 8, fw = pw / N;
+    function fx(i) { return ml + (i + 0.5) * fw; }
+    // 波形
+    ctx.strokeStyle = TEAL; ctx.lineWidth = 2.5; ctx.beginPath();
+    for (var px = 0; px <= pw; px += 2) { var t = px / pw, y = 92 + 34 * Math.sin(t * 46) * Math.sin(t * 6 + 0.7); if (px === 0) ctx.moveTo(ml + px, y); else ctx.lineTo(ml + px, y); }
+    ctx.stroke();
+    ctx.fillStyle = MUTED; ctx.font = "24px ui-monospace,Menlo,monospace"; ctx.textAlign = "left"; ctx.fillText("波形（サンプル列）", ml, 42);
+    // 窓（i=2,3,4 を重ねて）→ フレームへ矢印
+    var wt = 156, wb = 226;
+    [2, 3, 4].forEach(function (i) {
+      var x0 = fx(i) - 1.25 * fw, x1 = fx(i) + 1.25 * fw;
+      ctx.fillStyle = "rgba(221,106,43,0.15)"; ctx.fillRect(x0, wt, x1 - x0, wb - wt);
+      ctx.strokeStyle = ORANGE; ctx.lineWidth = 2; ctx.strokeRect(x0, wt, x1 - x0, wb - wt);
+      ctx.strokeStyle = "rgba(221,106,43,0.7)"; ctx.beginPath(); ctx.moveTo(fx(i), wb); ctx.lineTo(fx(i), 280); ctx.stroke();
+      ctx.fillStyle = ORANGE; ctx.beginPath(); ctx.moveTo(fx(i), 288); ctx.lineTo(fx(i) - 7, 274); ctx.lineTo(fx(i) + 7, 274); ctx.closePath(); ctx.fill();
+    });
+    ctx.fillStyle = ORANGE; ctx.font = "22px ui-monospace,Menlo,monospace"; ctx.textAlign = "center"; ctx.fillText("窓 ≈25ms（隣と重なる）", fx(3), wt - 12);
+    // フレーム行
+    var fy = 290, fh = 58;
+    for (var k = 0; k < N; k++) {
+      var x = fx(k) - fw * 0.42;
+      ctx.fillStyle = "rgba(11,110,120,0.16)"; ctx.fillRect(x, fy, fw * 0.84, fh);
+      ctx.strokeStyle = TEAL; ctx.lineWidth = 2; ctx.strokeRect(x, fy, fw * 0.84, fh);
+      ctx.fillStyle = INK; ctx.font = "bold 24px ui-monospace,Menlo,monospace"; ctx.textAlign = "center"; ctx.fillText("f" + k, fx(k), fy + fh / 2 + 9);
+    }
+    ctx.fillStyle = MUTED; ctx.font = "24px ui-monospace,Menlo,monospace"; ctx.textAlign = "left"; ctx.fillText("フレーム（10msごと1本＝特徴ベクトル）", ml, fy + fh + 36);
+    // チャンク
+    var cyT = fy + fh + 64, cyB = cyT + 56;
+    [[0, 3], [4, 7]].forEach(function (ch, idx) {
+      var x0 = fx(ch[0]) - fw * 0.45, x1 = fx(ch[1]) + fw * 0.45;
+      ctx.fillStyle = idx === 0 ? "rgba(11,110,120,0.10)" : "rgba(221,106,43,0.10)"; ctx.fillRect(x0, cyT, x1 - x0, cyB - cyT);
+      ctx.strokeStyle = idx === 0 ? TEAL : ORANGE; ctx.lineWidth = 2.5; ctx.strokeRect(x0, cyT, x1 - x0, cyB - cyT);
+      ctx.fillStyle = idx === 0 ? TEAL : ORANGE; ctx.font = "bold 23px ui-monospace,Menlo,monospace"; ctx.textAlign = "center"; ctx.fillText("チャンク" + (idx + 1) + "（4フレーム）", (x0 + x1) / 2, (cyT + cyB) / 2 + 8);
+    });
+    ctx.fillStyle = MUTED; ctx.font = "24px ui-monospace,Menlo,monospace"; ctx.textAlign = "left"; ctx.fillText("チャンク（C フレームの塊＝1回に処理／遅延のつまみ）", ml, cyB + 36);
   }
 })();
