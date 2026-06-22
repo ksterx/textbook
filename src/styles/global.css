@@ -109,6 +109,7 @@ details.callout[open] > summary { margin-bottom: 0.6rem; }
 .content figure { margin: 1.7rem 0; }
 .content canvas { width: 100%; display: block; border: 1px solid var(--hair); border-radius: 5px; background: var(--panel); }
 .content canvas.narrow { max-width: 360px; margin: 0 auto; }
+.content figure img { display: block; max-width: 100%; height: auto; margin: 0 auto; background: #fff; border: 1px solid var(--hair); border-radius: 5px; }
 .fig-cap, .content figcaption { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.04em; color: var(--muted); margin-top: 0.5rem; display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 
 /* ---- math（KaTeX ディスプレイをパネル化） ---- */
