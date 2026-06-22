@@ -102,6 +102,14 @@ flowchart TD
 
 → [読む](/audio/09-nemotron-streaming-asr/)
 
+### 10. ケーススタディ：Qwen3-ASR ✅ Ready
+
+- **学ぶ**: 章04 の AED 系の最新形 —— **デコーダが LLM そのもの**（LALM）。AuT エンコーダ＋Qwen3 LLM・context biasing・2 秒チャンク streaming・4 段階学習・forced aligner
+- **橋渡し**: 章09 Nemotron（transducer・低遅延）の**対極**。LLM のマルチモーダル入力＋プロンプトで ASR を解く
+- **作る**: LALM 入力（context あり/なし）の組み立て、forced aligner の AAS を NumPy で実測
+
+→ [読む](/audio/10-qwen3-asr/)
+
 ## 章一覧
 
 | # | 章 | 状態 |
@@ -115,6 +123,7 @@ flowchart TD
 | 7 | [連続生成 TTS（flow matching・F5-TTS 系）](/audio/07-flow-matching-tts/) | ✅ 公開 / 🎯目標② |
 | 8 | [統合・全二重 streaming TTS（Moshi / DSM）](/audio/08-unified-streaming-tts/) | ✅ 公開 / 🎯目標③ |
 | 9 | [ケーススタディ：Nemotron 3.5 多言語ストリーミング ASR](/audio/09-nemotron-streaming-asr/) | ✅ 公開 |
+| 10 | [ケーススタディ：Qwen3-ASR（LLM デコーダ型 ASR）](/audio/10-qwen3-asr/) | ✅ 公開 |
 
 :::note[章は順次追加されます]
 「次は◯◯の章を書いて」と指示すると、統一フォーマットで新しい章が追加されます。

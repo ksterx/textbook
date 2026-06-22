@@ -20,6 +20,7 @@
     "nemotron-latency-wer": drawNemotronLatencyWer,
     "nemotron-throughput": drawNemotronThroughput,
     "conformer-block": drawConformerBlock,
+    "qwen3-offline-streaming": drawQwen3OfflineStreaming,
   };
 
   function redraw() {
@@ -597,5 +598,36 @@
     aHead(spineX, lnTop + lnH + 44, 'down');
     ctx.fillStyle = INK; ctx.font = fName; ctx.fillText("y：このブロックの出力", spineX, lnTop + lnH + 78);
     ctx.fillStyle = MUTED; ctx.font = fRole; ctx.fillText("次のブロックへ（FastConformer は ×24）", spineX, lnTop + lnH + 108);
+  }
+
+  // audio/10: Qwen3-ASR の offline vs streaming WER（3ベンチ平均, Table 8）。
+  function drawQwen3OfflineStreaming(c) {
+    var ctx = c.getContext("2d"), W = c.width, H = c.height; ctx.clearRect(0, 0, W, H);
+    var ml = 120, mr = 60, mt = 100, mb = 130, pw = W - ml - mr, ph = H - mt - mb, ymax = 5;
+    function Y(v) { return mt + ph - v / ymax * ph; }
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.5; ctx.beginPath();
+    ctx.moveTo(ml, mt); ctx.lineTo(ml, mt + ph); ctx.lineTo(ml + pw, mt + ph); ctx.stroke();
+    ctx.font = "24px ui-monospace,Menlo,monospace"; ctx.textAlign = "right";
+    for (var v = 1; v <= 5; v++) {
+      ctx.strokeStyle = "#e3e8ec"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(ml, Y(v)); ctx.lineTo(ml + pw, Y(v)); ctx.stroke();
+      ctx.fillStyle = MUTED; ctx.fillText(v + "%", ml - 14, Y(v) + 8);
+    }
+    var groups = [{ name: "Qwen3-ASR 1.7B", off: 2.69, str: 3.33 }, { name: "Qwen3-ASR 0.6B", off: 3.48, str: 4.40 }];
+    var gw = pw / groups.length, bw = 110, gap = 44;
+    groups.forEach(function (g, gi) {
+      var cx = ml + gw * gi + gw / 2, x1 = cx - bw - gap / 2, x2 = cx + gap / 2;
+      function bar(x, val, col) {
+        var y = Y(val), h = mt + ph - y; ctx.fillStyle = col; ctx.fillRect(x, y, bw, h);
+        ctx.fillStyle = INK; ctx.font = "bold 28px ui-monospace,Menlo,monospace"; ctx.textAlign = "center"; ctx.fillText(val.toFixed(2), x + bw / 2, y - 14);
+      }
+      bar(x1, g.off, TEAL); bar(x2, g.str, "rgba(221,106,43,0.85)");
+      ctx.fillStyle = INK; ctx.font = "bold 26px ui-monospace,Menlo,monospace"; ctx.textAlign = "center"; ctx.fillText(g.name, cx, mt + ph + 44);
+      ctx.fillStyle = MUTED; ctx.font = "22px ui-monospace,Menlo,monospace"; ctx.fillText("劣化 +" + (g.str - g.off).toFixed(2) + "pt", cx, mt + ph + 76);
+    });
+    ctx.textAlign = "left"; ctx.font = "24px ui-monospace,Menlo,monospace";
+    ctx.fillStyle = TEAL; ctx.fillRect(ml, 46, 26, 26); ctx.fillStyle = INK; ctx.fillText("offline", ml + 36, 66);
+    ctx.fillStyle = "rgba(221,106,43,0.85)"; ctx.fillRect(ml + 210, 46, 26, 26); ctx.fillStyle = INK; ctx.fillText("streaming（2秒チャンク）", ml + 246, 66);
+    ctx.fillStyle = MUTED; ctx.textAlign = "center"; ctx.font = "24px ui-monospace,Menlo,monospace";
+    ctx.fillText("WER %（低いほど良い・3ベンチ平均, Table 8）", W / 2, H - 22);
   }
 })();

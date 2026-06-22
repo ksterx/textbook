@@ -32,6 +32,7 @@ export const NAV = [
       { title: '7. 連続生成 TTS（flow matching）', href: '/audio/07-flow-matching-tts/' },
       { title: '8. 統合・全二重 streaming TTS', href: '/audio/08-unified-streaming-tts/' },
       { title: '9. ケーススタディ：Nemotron 3.5 ASR', href: '/audio/09-nemotron-streaming-asr/' },
+      { title: '10. ケーススタディ：Qwen3-ASR', href: '/audio/10-qwen3-asr/' },
     ],
   },
   {
