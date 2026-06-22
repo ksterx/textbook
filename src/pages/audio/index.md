@@ -94,6 +94,14 @@ flowchart TD
 - **7. 連続生成 TTS（flow matching・F5-TTS 系）** 🎯 目標② — 非自己回帰・数ステップ生成（[読む](/audio/07-flow-matching-tts/)）
 - **8. 統合・全二重 streaming TTS（Moshi / Kyutai DSM）** 🎯 目標③ — テキストも音声も streaming（[読む](/audio/08-unified-streaming-tts/)）
 
+### 9. ケーススタディ：Nemotron 3.5 ASR ✅ Ready
+
+- **学ぶ**: 章04 の理論を 1 実モデルで読む —— 言語 ID 条件付け（1 モデルで 40 言語）・5 段階レイテンシ（`att_context_size`）・cache-aware のスループット経済性・擬似ラベル学習
+- **橋渡し**: 言語 ID one-hot = LLM のタスクトークン／system prompt。cache-aware = encoder 側の KV cache
+- **作る**: `att_context_size` → 遅延、buffered vs cache-aware コストを NumPy で実測
+
+→ [読む](/audio/09-nemotron-streaming-asr/)
+
 ## 章一覧
 
 | # | 章 | 状態 |
@@ -106,6 +114,7 @@ flowchart TD
 | 6 | [トークンベース TTS（VALL-E 系）](/audio/06-token-based-tts/) | ✅ 公開 |
 | 7 | [連続生成 TTS（flow matching・F5-TTS 系）](/audio/07-flow-matching-tts/) | ✅ 公開 / 🎯目標② |
 | 8 | [統合・全二重 streaming TTS（Moshi / DSM）](/audio/08-unified-streaming-tts/) | ✅ 公開 / 🎯目標③ |
+| 9 | [ケーススタディ：Nemotron 3.5 多言語ストリーミング ASR](/audio/09-nemotron-streaming-asr/) | ✅ 公開 |
 
 :::note[章は順次追加されます]
 「次は◯◯の章を書いて」と指示すると、統一フォーマットで新しい章が追加されます。

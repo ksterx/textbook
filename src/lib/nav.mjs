@@ -31,6 +31,7 @@ export const NAV = [
       { title: '6. トークンベース TTS（VALL-E）', href: '/audio/06-token-based-tts/' },
       { title: '7. 連続生成 TTS（flow matching）', href: '/audio/07-flow-matching-tts/' },
       { title: '8. 統合・全二重 streaming TTS', href: '/audio/08-unified-streaming-tts/' },
+      { title: '9. ケーススタディ：Nemotron 3.5 ASR', href: '/audio/09-nemotron-streaming-asr/' },
     ],
   },
   {

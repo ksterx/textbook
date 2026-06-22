@@ -17,6 +17,8 @@
     "gridworld-value": drawGridworldValue,
     "scaling-law": drawScalingLaw,
     "sway-sampling": drawSwaySampling,
+    "nemotron-latency-wer": drawNemotronLatencyWer,
+    "nemotron-throughput": drawNemotronThroughput,
   };
 
   function redraw() {
@@ -408,5 +410,79 @@
     ctx.fillText("t=0（ノイズ）", X(0), yS + 56); ctx.fillText("t=1（mel）", X(1), yS + 56);
     ctx.fillStyle = MUTED; ctx.font = "25px ui-monospace,Menlo,monospace"; ctx.textAlign = "center";
     ctx.fillText("t = u + s·(cos(π/2·u) − 1 + u)  …  s<0 で左へ寄る（少ステップでも序盤を細かく辿れる）", W / 2, yS + 102);
+  }
+
+  // audio/09: Nemotron 3.5 ASR のレイテンシ↔WER。チャンクを大きく（=待つ）すると WER が下がる。
+  // 実測点は FLEURS transcription-ready 平均（80/320/1120ms の 3 点のみ公開値）。
+  function drawNemotronLatencyWer(c) {
+    var ctx = c.getContext("2d"), W = c.width, H = c.height; ctx.clearRect(0, 0, W, H);
+    var ml = 150, mr = 80, mt = 70, mb = 130, pw = W - ml - mr, ph = H - mt - mb;
+    var xs = [80, 1120], ys = [8.4, 10.8]; // 描画範囲
+    function X(ms) { return ml + (ms - xs[0]) / (xs[1] - xs[0]) * pw; }
+    function Y(w) { return mt + (w - ys[0]) / (ys[1] - ys[0]) * ph; } // 上が低 WER
+    // 軸
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.5; ctx.beginPath();
+    ctx.moveTo(ml, mt); ctx.lineTo(ml, mt + ph); ctx.lineTo(ml + pw, mt + ph); ctx.stroke();
+    // y グリッド
+    ctx.fillStyle = MUTED; ctx.font = "24px ui-monospace,Menlo,monospace";
+    [9, 10].forEach(function (w) {
+      ctx.strokeStyle = "#e3e8ec"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(ml, Y(w)); ctx.lineTo(ml + pw, Y(w)); ctx.stroke();
+      ctx.textAlign = "right"; ctx.fillText(w + "%", ml - 14, Y(w) + 8);
+    });
+    // x 目盛（5 つの動作点）
+    var ticks = [80, 160, 320, 560, 1120];
+    ctx.textAlign = "center";
+    ticks.forEach(function (ms) {
+      ctx.strokeStyle = "#c2ccd5"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(X(ms), mt + ph); ctx.lineTo(X(ms), mt + ph + 8); ctx.stroke();
+      ctx.fillStyle = MUTED; ctx.fillText(ms, X(ms), mt + ph + 38);
+    });
+    // 公開された 3 実測点
+    var pts = [[80, 10.38], [320, 9.49], [1120, 8.84]];
+    ctx.strokeStyle = TEAL; ctx.lineWidth = 5; ctx.beginPath();
+    pts.forEach(function (p, i) { if (i) ctx.lineTo(X(p[0]), Y(p[1])); else ctx.moveTo(X(p[0]), Y(p[1])); }); ctx.stroke();
+    pts.forEach(function (p) {
+      ctx.fillStyle = ORANGE; ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), 11, 0, 7); ctx.fill();
+      ctx.fillStyle = INK; ctx.font = "bold 25px ui-monospace,Menlo,monospace"; ctx.textAlign = "center";
+      ctx.fillText(p[1].toFixed(2) + "%", X(p[0]), Y(p[1]) - 22);
+    });
+    // 軸ラベル
+    ctx.fillStyle = INK; ctx.font = "bold 27px ui-monospace,Menlo,monospace"; ctx.textAlign = "center";
+    ctx.fillText("チャンク（遅延）ms →", ml + pw / 2, H - 26);
+    ctx.save(); ctx.translate(ml - 92, mt + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText("WER（低いほど良い）", 0, 0); ctx.restore();
+    ctx.fillStyle = TEAL; ctx.font = "26px ui-monospace,Menlo,monospace"; ctx.textAlign = "left";
+    ctx.fillText("待つほど精度↑（遅延↔精度のトレードオフ）", X(360), Y(10.5));
+  }
+
+  // audio/09: 同時ストリーム数（H100 1 枚）。各遅延設定ごとに Nemotron 0.6B vs Parakeet 1.1B。
+  // グループ内で各自の最大に正規化して比率（17x / 6x）を見せる。
+  function drawNemotronThroughput(c) {
+    var ctx = c.getContext("2d"), W = c.width, H = c.height; ctx.clearRect(0, 0, W, H);
+    var groups = [
+      { name: "80ms 設定", nemo: 240, para: 14, ratio: "17x" },
+      { name: "1120ms 設定", nemo: 2400, para: 400, ratio: "6x" },
+    ];
+    var gap = 90, gw = (W - gap) / 2, mt = 90, mb = 110, barMaxH = H - mt - mb;
+    groups.forEach(function (g, gi) {
+      var ox = gi * (gw + gap);
+      var max = g.nemo, bw = 150, cx = ox + gw / 2, x1 = cx - bw - 50, x2 = cx + 50;
+      function barH(v) { return v / max * barMaxH; }
+      function bar(x, v, col, label) {
+        var h = barH(v), y = mt + barMaxH - h;
+        ctx.fillStyle = col; ctx.fillRect(x, y, bw, h);
+        ctx.fillStyle = INK; ctx.font = "bold 30px ui-monospace,Menlo,monospace"; ctx.textAlign = "center";
+        ctx.fillText(v.toLocaleString(), x + bw / 2, y - 16);
+        ctx.fillStyle = MUTED; ctx.font = "23px ui-monospace,Menlo,monospace";
+        ctx.fillText(label, x + bw / 2, mt + barMaxH + 40);
+      }
+      bar(x1, g.nemo, TEAL, "Nemotron 0.6B");
+      bar(x2, g.para, "rgba(221,106,43,0.85)", "Parakeet 1.1B");
+      // 比率
+      ctx.fillStyle = ORANGE; ctx.font = "bold 40px ui-monospace,Menlo,monospace"; ctx.textAlign = "center";
+      ctx.fillText(g.ratio, cx, mt - 30);
+      ctx.fillStyle = INK; ctx.font = "bold 27px ui-monospace,Menlo,monospace";
+      ctx.fillText(g.name, cx, mt + barMaxH + 80);
+    });
+    ctx.fillStyle = MUTED; ctx.font = "24px ui-monospace,Menlo,monospace"; ctx.textAlign = "center";
+    ctx.fillText("H100 1 枚あたりの同時ストリーム数（グループ内で正規化）", W / 2, 40);
   }
 })();
