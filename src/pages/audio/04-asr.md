@@ -261,15 +261,24 @@ $$P(y\mid x)=\prod_{u=1}^{U} p\!\left(y_u\mid y_{<u},\,c_u\right),\qquad c_u=\su
 
 ### Conformer ブロックの中身（macaron 構造）
 
-1ブロック = 4サブモジュールの「サンドイッチ」です。各サブモジュールは残差接続で繋ぎます。
+1ブロック = 4サブモジュールの「サンドイッチ」です。重要なのは**繋ぎ方**で、各サブモジュールは**残差接続 (residual / skip connection)** で繋ぎます。
 
-```mermaid
-flowchart LR
-  F1["½ FFN<br/>前半分"] -->|"+"| M["MHSA<br/>相対位置・大域"]
-  M -->|"+"| C["Conv module<br/>局所"]
-  C -->|"+"| F2["½ FFN<br/>後半分"]
-  F2 -->|"→"| L["LayerNorm<br/>出力"]
-```
+ここで多くの図に出てくる **「+」（⊕）が何かをはっきりさせます。あれは足し算 —— 残差加算です。** 各サブ層は入力を素通しさせる「skip 経路」を持ち、サブ層を通った結果を**元の入力に足し戻し**ます。式で書くと:
+
+$$
+\mathbf{x} \leftarrow \mathbf{x} + \mathrm{SubLayer}(\mathrm{LN}(\mathbf{x}))
+$$
+
+つまり ⊕ の左から来るのが「素通しの入力 $\mathbf{x}$」、上/右から来るのが「サブ層の出力」で、両者を**要素ごとに足す**のが ⊕ です（FFN だけは出力を ½ 倍してから足す）。下図の**縦線が skip 経路**、**オレンジの ⊕ が残差加算**です。
+
+<figure>
+  <canvas id="conformer-block" width="1080" height="1460" aria-hidden="true"></canvas>
+  <figcaption class="fig-cap"><span>Conformer ブロック：½FFN→MHSA→Conv→½FFN→LayerNorm の macaron 構造</span><span>⊕=残差加算（素通しの入力＋サブ層出力）／各サブ層は pre-LN（LN→モジュール）</span></figcaption>
+</figure>
+
+:::note[なぜ残差接続なのか]
+深いネットワークでも勾配が通りやすく、各サブ層は「入力をどう**修正**するか（差分）」だけを学べばよくなります。LLM の Transformer ブロックとまったく同じ仕組みで、Conformer は「足す相手」を ½FFN・MHSA・Conv の 4 つに増やしただけ、と捉えられます。
+:::
 
 - **½-step FFN を前後に2つ（macaron）**：attention を 2 つの FFN で挟む構造。Transformer の FFN 1 個より表現力が上がる経験則（中身は下の「½ FFN とは何か」で詳説）。
 - **MHSA + 相対位置エンコーディング**：絶対位置でなく**位置の差**で効かせる（Transformer-XL 流）。音声は長さがバラバラなので相対位置の方が汎化する —— **LLM の RoPE と同じ動機**。

@@ -19,6 +19,7 @@
     "sway-sampling": drawSwaySampling,
     "nemotron-latency-wer": drawNemotronLatencyWer,
     "nemotron-throughput": drawNemotronThroughput,
+    "conformer-block": drawConformerBlock,
   };
 
   function redraw() {
@@ -484,5 +485,117 @@
     });
     ctx.fillStyle = MUTED; ctx.font = "24px ui-monospace,Menlo,monospace"; ctx.textAlign = "center";
     ctx.fillText("H100 1 枚あたりの同時ストリーム数（グループ内で正規化）", W / 2, 40);
+  }
+
+  // audio/04: Conformer ブロック。macaron 構造（½FFN→MHSA→Conv→½FFN→LN）と、
+  // 各サブ層の「残差接続（skip + ⊕加算）」を明示する。「+」が何かを図で示すのが主目的。
+  function drawConformerBlock(c) {
+    var ctx = c.getContext("2d"), W = c.width, H = c.height; ctx.clearRect(0, 0, W, H);
+    var spineX = W * 0.30, boxX = W * 0.42, boxW = W * 0.50, bcx = boxX + boxW / 2;
+    var fName = "bold 27px ui-monospace,Menlo,monospace";
+    var fRole = "22px ui-monospace,Menlo,monospace";
+    var fSmall = "20px ui-monospace,Menlo,monospace";
+
+    function rr(x, y, w, h, r) {
+      ctx.beginPath(); ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+    }
+    function aHead(x, y, dir) { // 'down' | 'left'
+      var s = 13; ctx.fillStyle = INK; ctx.beginPath();
+      if (dir === 'down') { ctx.moveTo(x, y); ctx.lineTo(x - s, y - s * 1.5); ctx.lineTo(x + s, y - s * 1.5); }
+      else { ctx.moveTo(x, y); ctx.lineTo(x + s * 1.5, y - s); ctx.lineTo(x + s * 1.5, y + s); }
+      ctx.closePath(); ctx.fill();
+    }
+    function plus(x, y, r) {
+      ctx.fillStyle = "#fff"; ctx.strokeStyle = ORANGE; ctx.lineWidth = 4.5;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x - r * 0.5, y); ctx.lineTo(x + r * 0.5, y);
+      ctx.moveTo(x, y - r * 0.5); ctx.lineTo(x, y + r * 0.5); ctx.stroke();
+    }
+
+    // 入力
+    ctx.fillStyle = INK; ctx.font = fName; ctx.textAlign = "center";
+    ctx.fillText("x：音響フレーム列", spineX, 52);
+    ctx.fillStyle = MUTED; ctx.font = fRole; ctx.fillText("(subsample 後)", spineX, 82);
+
+    var startY = 150, bandH = 250;
+    var stages = [
+      { name: "½ FFN", role: "位置ごと・前半", half: true },
+      { name: "MHSA", role: "相対位置・大域", half: false },
+      { name: "Conv module", role: "depthwise・局所", half: false },
+      { name: "½ FFN", role: "位置ごと・後半", half: true },
+    ];
+
+    // 凡例（右上）
+    var lx = W * 0.46, ly = 28, lw = W * 0.52, lh = 150;
+    ctx.fillStyle = "rgba(90,101,115,0.06)"; ctx.strokeStyle = HAIR; ctx.lineWidth = 1.5;
+    rr(lx, ly, lw, lh, 10); ctx.fill(); ctx.stroke();
+    ctx.textAlign = "left"; ctx.font = fSmall;
+    plus(lx + 26, ly + 32, 13);
+    ctx.fillStyle = INK; ctx.fillText("⊕ ＝ 残差加算：出力 = 入力 + サブ層", lx + 52, ly + 39);
+    ctx.strokeStyle = INK; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(lx + 26, ly + 60); ctx.lineTo(lx + 26, ly + 90); ctx.stroke();
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(lx + 26, ly + 62, 5, 0, 7); ctx.fill();
+    ctx.fillStyle = INK; ctx.fillText("縦線 ＝ skip 経路（入力を素通しで運ぶ）", lx + 52, ly + 82);
+    ctx.fillStyle = ORANGE; ctx.font = "bold 20px ui-monospace,Menlo,monospace"; ctx.fillText("×½", lx + 16, ly + 126);
+    ctx.fillStyle = INK; ctx.font = fSmall; ctx.fillText("＝ FFN は出力を半分にして足す（macaron）", lx + 52, ly + 124);
+
+    // 入力 → 最初の split
+    ctx.strokeStyle = INK; ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.moveTo(spineX, 96); ctx.lineTo(spineX, startY + 25); ctx.stroke();
+
+    for (var i = 0; i < stages.length; i++) {
+      var yS = startY + i * bandH;
+      var splitY = yS + 25, addY = yS + 225, boxTop = yS + 80, boxBot = yS + 180, boxMid = (boxTop + boxBot) / 2;
+      var st = stages[i];
+
+      // skip（spine）split → add
+      ctx.strokeStyle = INK; ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.moveTo(spineX, splitY); ctx.lineTo(spineX, addY); ctx.stroke();
+      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(spineX, splitY, 7, 0, 7); ctx.fill();
+
+      // 分岐：split → 右 → 下へ box top
+      ctx.strokeStyle = TEAL; ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.moveTo(spineX, splitY); ctx.lineTo(bcx, splitY); ctx.lineTo(bcx, boxTop); ctx.stroke();
+      aHead(bcx, boxTop, 'down');
+
+      // box（pre-LN → モジュール）
+      ctx.fillStyle = "rgba(11,110,120,0.10)"; ctx.strokeStyle = TEAL; ctx.lineWidth = 3;
+      rr(boxX, boxTop, boxW, boxBot - boxTop, 10); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = MUTED; ctx.font = fSmall; ctx.textAlign = "left";
+      ctx.fillText("LN →", boxX + 14, boxTop + 26);
+      ctx.fillStyle = TEAL; ctx.font = fName; ctx.textAlign = "center";
+      ctx.fillText(st.name, bcx, boxMid + 2);
+      ctx.fillStyle = MUTED; ctx.font = fRole; ctx.fillText(st.role, bcx, boxMid + 32);
+
+      // 出力：box bottom → 下 → 左へ add
+      ctx.strokeStyle = TEAL; ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.moveTo(bcx, boxBot); ctx.lineTo(bcx, addY); ctx.lineTo(spineX + 20, addY); ctx.stroke();
+      aHead(spineX + 20, addY, 'left');
+      if (st.half) { ctx.fillStyle = ORANGE; ctx.font = "bold 23px ui-monospace,Menlo,monospace"; ctx.textAlign = "center"; ctx.fillText("×½", bcx + 50, addY - 14); }
+
+      // ⊕
+      plus(spineX, addY, 17);
+
+      // spine → 次の split（最後は LN box まで）
+      var nextY = (i < stages.length - 1) ? (startY + (i + 1) * bandH + 25) : (addY + 70);
+      ctx.strokeStyle = INK; ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.moveTo(spineX, addY + 17); ctx.lineTo(spineX, nextY); ctx.stroke();
+    }
+
+    // 最終 LayerNorm（残差なし・spine 上に直列）
+    var lastAdd = startY + 3 * bandH + 225;
+    var lnTop = lastAdd + 70, lnH = 86, lnW = 300, lnX = spineX - lnW / 2;
+    aHead(spineX, lnTop, 'down');
+    ctx.fillStyle = "rgba(221,106,43,0.10)"; ctx.strokeStyle = ORANGE; ctx.lineWidth = 3;
+    rr(lnX, lnTop, lnW, lnH, 10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = ORANGE; ctx.font = fName; ctx.textAlign = "center";
+    ctx.fillText("LayerNorm", spineX, lnTop + lnH / 2 + 9);
+    // 出力
+    ctx.strokeStyle = INK; ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.moveTo(spineX, lnTop + lnH); ctx.lineTo(spineX, lnTop + lnH + 44); ctx.stroke();
+    aHead(spineX, lnTop + lnH + 44, 'down');
+    ctx.fillStyle = INK; ctx.font = fName; ctx.fillText("y：このブロックの出力", spineX, lnTop + lnH + 78);
+    ctx.fillStyle = MUTED; ctx.font = fRole; ctx.fillText("次のブロックへ（FastConformer は ×24）", spineX, lnTop + lnH + 108);
   }
 })();
