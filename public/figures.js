@@ -16,6 +16,7 @@
     "pid-response": drawPidResponse,
     "gridworld-value": drawGridworldValue,
     "scaling-law": drawScalingLaw,
+    "sway-sampling": drawSwaySampling,
   };
 
   function redraw() {
@@ -382,5 +383,30 @@
     ctx.fillStyle = INK; ctx.font = "bold 27px ui-monospace,Menlo,monospace"; ctx.textAlign = "center"; ctx.fillText("計算量 C（log）→", ml + pw / 2, mt + ph + 62);
     ctx.save(); ctx.translate(ml - 76, mt + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText("損失 L（log）→", 0, 0); ctx.restore();
     ctx.fillStyle = MUTED; ctx.textAlign = "left"; ctx.font = "24px ui-monospace,Menlo,monospace"; ctx.fillText("計算・データ・パラメータを増やすほど損失が下がる（予測可能なべき乗則）", ml, mt + ph + 108);
+  }
+
+  // audio/07: Sway Sampling — ODE の時刻を等間隔でなく序盤(ノイズ支配)に寄せて刻む
+  function drawSwaySampling(c) {
+    var ctx = c.getContext("2d"), W = c.width, H = c.height; ctx.clearRect(0, 0, W, H);
+    var ml = 130, mr = 130, pw = W - ml - mr, N = 8, yU = 230, yS = 470;
+    function X(t) { return ml + t * pw; }
+    function axis(y, label, col) {
+      ctx.strokeStyle = HAIR; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(X(0), y); ctx.lineTo(X(1), y); ctx.stroke();
+      ctx.fillStyle = col; ctx.font = "bold 28px ui-monospace,Menlo,monospace"; ctx.textAlign = "left"; ctx.fillText(label, X(0), y - 38);
+    }
+    axis(yU, "等間隔 (uniform)：序盤も終盤も同じ粗さ", MUTED);
+    axis(yS, "Sway sampling (s<0)：序盤に評価点が密集", TEAL);
+    for (var k = 0; k < N; k++) {
+      var u = k / (N - 1), tp = 1 - Math.cos(Math.PI / 2 * u); // s=-1 のとき t' = 1 - cos(π/2 u)
+      // 同じ番号の点を薄い線で結び、左（t=0）へ寄ったことを示す
+      ctx.strokeStyle = "rgba(90,101,115,0.35)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(X(u), yU); ctx.lineTo(X(tp), yS); ctx.stroke();
+      ctx.fillStyle = MUTED; ctx.beginPath(); ctx.arc(X(u), yU, 12, 0, 7); ctx.fill();
+      ctx.fillStyle = TEAL; ctx.beginPath(); ctx.arc(X(tp), yS, 12, 0, 7); ctx.fill();
+    }
+    // 端ラベル
+    ctx.fillStyle = INK; ctx.font = "26px ui-monospace,Menlo,monospace"; ctx.textAlign = "center";
+    ctx.fillText("t=0（ノイズ）", X(0), yS + 56); ctx.fillText("t=1（mel）", X(1), yS + 56);
+    ctx.fillStyle = MUTED; ctx.font = "25px ui-monospace,Menlo,monospace"; ctx.textAlign = "center";
+    ctx.fillText("t = u + s·(cos(π/2·u) − 1 + u)  …  s<0 で左へ寄る（少ステップでも序盤を細かく辿れる）", W / 2, yS + 102);
   }
 })();
