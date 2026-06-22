@@ -320,6 +320,44 @@ $$\text{cost}\propto L^2,\qquad L\to \frac{L}{r}\ \Rightarrow\ \text{cost}\times
 - **標準 Conformer**：stride-2 conv ×2 で **4×** ダウンサンプル（→ 40 ms フレーム）。
 - **FastConformer**：depthwise-separable conv で **8×**（→ 80 ms フレーム）。$L$ が半分 → attention コスト約 1/4。長音声・streaming で効き、NVIDIA Parakeet/Canary/Nemotron の土台です。
 
+### shape の流れ：入力 → d_model → 出力 $f_t$
+
+エンコーダが何を受け取り、何に「落とす」かを軸の意味つきで追います。
+
+| 段階 | shape | 各軸の意味 |
+| --- | --- | --- |
+| 入力（log-mel） | `[B, T_in, F]` 例 `[B, T_in, 80]` | B=バッチ／T_in=フレーム（**10 ms＝100 fps**）／F=mel ビン（通常 80） |
+| 8× サブサンプル＋射影 | `[B, T, d_model]` 例 `[B, T_in/8, 1024]` | T=**80 ms** フレーム（12.5 fps）／d_model=エンコーダ幅（Nemotron は 1024） |
+| Conformer ブロック ×24 | `[B, T, 1024] → [B, T, 1024]` | **形を変えない**（残差のため入出力同形） |
+| 出力 $f_t$ | `[B, T, 1024]` | 80 ms ごとの音響ベクトル列（RNN-T の joint へ） |
+
+落とすのは 2 軸 —— **時間** $T_{\text{in}}\to T_{\text{in}}/8$（8× 間引き）と **特徴** mel 80 → d_model 1024 です。
+
+**d_model とは何か。** 各フレームを表すベクトルの幅（ハイパーパラメータ）。実際に「d_model にする」のは **subsample front-end の最後の線形射影** `Linear(チャネル×周波数 → d_model)` 一枚です。以降ずっと d_model が一定なのは、残差接続 $\mathbf{x} \leftarrow \mathbf{x} + \mathrm{SubLayer}(\mathbf{x})$ が足し算で**入出力同次元を要求**するから。だから FFN も `1024→4096→1024`、attention も最後に 1024 へ戻します。d_model はモデルの容量で、パラメータ数もほぼ「d_model × 深さ」で効きます（入力 mel 数とは独立）。
+
+:::warning[「最初の Linear だけで十分」ではない]
+front-end の Linear は **線形・フレームごと・文脈なし**です。線形を重ねても 1 つの線形写像にしかならず、各出力は数フレームの局所しか見ません。ところが「同じ 80 ms の音」でも周囲次第で別の音素・別の語になります（調音結合。"recognize speech" vs "wreck a nice beach"）。後続の 24 ブロックが足すのは **① 非線形性（FFN/GLU）② フレーム間の混合（attention=大域・conv=局所）③ 深さ（段階的な精錬）** の 3 つ。LLM でいえば **Linear=埋め込み層・ブロック=Transformer 層**で、埋め込みだけでは言語理解ができないのと同じです。表現は Linear が作るのではなく、**Linear＋ブロック全体**から立ち上がります。
+:::
+
+### Conformer はどう学習されるか
+
+**Conformer 単体の損失はありません。**（音声, 正解テキスト）のペアで、**デコーダの損失から end-to-end** に学習されます。
+
+```text
+音声 → Conformer エンコーダ → f_t → RNN-T(pred+joint) → 損失 L
+                                                          │
+     ←──────── 勾配が逆流（joint→encoder の全層）────────┘
+```
+
+- **損失**：Nemotron は RNN-T 損失（格子上の全アライメントを周辺化した $-\log P(y\mid x)$、前述）。hybrid 構成なら CTC 損失と和をとる。
+- **勾配の行き先**：逆伝播すると勾配が joint → encoder へ流れ、**front-end の Linear から 24 ブロックの全パラメータ**が更新される。エンコーダの目標は「デコーダが当てやすい $f_t$ を作ること」で、表現は下流タスクに引っ張られて形作られる（＝アライメントを教師なしで内部的に解く）。
+- **データ拡張・最適化**：入力スペクトログラムに **SpecAugment**（時間・周波数マスク）、AdamW＋warmup が定番。
+- **streaming 対応**：学習時にチャンク/右文脈をランダムに振る dynamic chunk training（後述「学習：可変チャンクで1モデルを多遅延対応に」）。任意で wav2vec2 / BEST-RQ 系の自己教師あり事前学習 → ASR 損失で微調整も。
+
+:::note[LLM ↔ Speech]
+事前学習 LLM を下流で微調整するのと同じ構図ですが、ここでは**エンコーダとデコーダを ASR 損失で同時学習**します。エンコーダ＝特徴抽出器、RNN-T（pred+joint）＝損失を供給する head、という分業です。
+:::
+
 ### streaming 化に必要な改造（見落とされがち）
 
 「未来を見ない」を成立させるには、attention だけでなく**全サブモジュールから未来参照を消す**必要があります。
